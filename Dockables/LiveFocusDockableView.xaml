@@ -292,10 +292,13 @@
                     </Button.Style>
                   </Button>
                   <Button Content="Auto ROI" Command="{Binding AutoRoiCommand}" Style="{StaticResource FocusButton}" Margin="0,0,8,0" ToolTip="Find a star near the selected area and size its box. With Bahtinov overlay enabled, include the mask pattern. Stop preview before selecting." />
-                  <ComboBox Width="88" SelectedValuePath="Tag" SelectedValue="{Binding PreviewRoiPreset, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" MinHeight="28" Margin="0,0,8,0" ToolTip="ROI preset. For a custom size, drag the edges of the yellow box." AutomationProperties.Name="ROI size preset">
+                  <ComboBox Width="104" SelectedValuePath="Tag" SelectedValue="{Binding PreviewRoiPreset, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" MinHeight="28" Margin="0,0,8,0" ToolTip="Percentages scale both sensor dimensions and keep the sensor aspect ratio: 50% uses 25% of the pixel area; 67% approximates a 1.5x crop on a full-frame sensor. 100% uses the full sensor within camera alignment limits. For a custom size, drag the yellow box edges." AutomationProperties.Name="ROI size preset">
                     <ComboBoxItem Content="256 px" Tag="256" />
                     <ComboBoxItem Content="512 px" Tag="512" />
                     <ComboBoxItem Content="1024 px" Tag="1024" />
+                    <ComboBoxItem Content="50%" Tag="50%" IsEnabled="{Binding HasRoiSensorDimensions}" />
+                    <ComboBoxItem Content="67%" Tag="67%" IsEnabled="{Binding HasRoiSensorDimensions}" />
+                    <ComboBoxItem Content="100% (Full)" Tag="100%" IsEnabled="{Binding HasRoiSensorDimensions}" />
                     <ComboBoxItem Content="Custom" Tag="Custom" />
                   </ComboBox>
 

@@ -12,13 +12,48 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         private int previewRoiWidth = 512, previewRoiHeight = 512;
         private int overviewSensorWidth, overviewSensorHeight, overviewWidth, overviewHeight;
         private double[] overviewPixels;
+        private static readonly int[] sensorRoiPercentages = { 50, 67, 100 };
+        public bool HasRoiSensorDimensions => SelectionSensorWidth >= 32 && SelectionSensorHeight >= 32;
         public int PreviewRoiWidth { get => previewRoiWidth; set { previewRoiWidth = Math.Clamp(value / 4 * 4, 32, SelectionSensorWidth >= 32 ? SelectionSensorWidth : int.MaxValue); ResetSharedFocusMeasurements(); RaisePropertyChanged(); RaisePropertyChanged(nameof(PreviewRoiPreset)); UpdateRoiSelection(); } }
         public int PreviewRoiHeight { get => previewRoiHeight; set { previewRoiHeight = Math.Clamp(value / 4 * 4, 32, SelectionSensorHeight >= 32 ? SelectionSensorHeight : int.MaxValue); ResetSharedFocusMeasurements(); RaisePropertyChanged(); RaisePropertyChanged(nameof(PreviewRoiPreset)); UpdateRoiSelection(); } }
         public string PreviewRoiPreset
         {
-            get => previewRoiWidth == previewRoiHeight && (previewRoiWidth == 256 || previewRoiWidth == 512 || previewRoiWidth == 1024) ? previewRoiWidth.ToString() : "Custom";
-            set { if (int.TryParse(value, out int size) && (previewRoiWidth != size || previewRoiHeight != size)) { PreviewRoiWidth = size; PreviewRoiHeight = size; } }
+            get
+            {
+                if (HasRoiSensorDimensions)
+                    foreach (int percentage in sensorRoiPercentages)
+                        if (SensorRoiSize(percentage) == (previewRoiWidth, previewRoiHeight)) return percentage + "%";
+                return previewRoiWidth == previewRoiHeight && (previewRoiWidth == 256 || previewRoiWidth == 512 || previewRoiWidth == 1024)
+                    ? previewRoiWidth.ToString() : "Custom";
+            }
+            set
+            {
+                if (!CanConfigureLive) return;
+                int width, height;
+                if (value?.EndsWith("%", StringComparison.Ordinal) == true)
+                {
+                    if (!HasRoiSensorDimensions || !int.TryParse(value[..^1], out int percentage) ||
+                        Array.IndexOf(sensorRoiPercentages, percentage) < 0) return;
+                    (width, height) = SensorRoiSize(percentage);
+                }
+                else if (int.TryParse(value, out int size) && (size == 256 || size == 512 || size == 1024))
+                {
+                    width = Math.Min(size, HasRoiSensorDimensions ? SelectionSensorWidth : size);
+                    height = Math.Min(size, HasRoiSensorDimensions ? SelectionSensorHeight : size);
+                }
+                else return;
+                if ((previewRoiWidth, previewRoiHeight) == (width, height)) return;
+                // Commit both dimensions together: intermediate square crops can
+                // otherwise reset the bound preset and render the overview twice.
+                previewRoiWidth = width; previewRoiHeight = height;
+                ResetSharedFocusMeasurements();
+                RaisePropertyChanged(nameof(PreviewRoiWidth)); RaisePropertyChanged(nameof(PreviewRoiHeight));
+                RaisePropertyChanged(); UpdateRoiSelection();
+            }
         }
+        private (int Width, int Height) SensorRoiSize(int percentage) =>
+            (Math.Max(32, (int)((long)SelectionSensorWidth * percentage / 100 / 4 * 4)),
+             Math.Max(32, (int)((long)SelectionSensorHeight * percentage / 100 / 4 * 4)));
         public int SelectionSensorWidth => overviewSensorWidth > 0 ? overviewSensorWidth : CameraInfo?.XSize ?? 0;
         public int SelectionSensorHeight => overviewSensorHeight > 0 ? overviewSensorHeight : CameraInfo?.YSize ?? 0;
         public FocusRoi.Rectangle PreviewRoiRectangle => SelectionSensorWidth >= 32 && SelectionSensorHeight >= 32
@@ -32,7 +67,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             AutoRoiCommand = new AsyncCommand<int>(() => RunGuarded("Auto ROI", SelectAutoRoiAsync), _ => CanStartAssist());
             SetRoiSizeCommand = new RelayCommand(p =>
             {
-                if (int.TryParse(p?.ToString(), out int size)) { PreviewRoiWidth = size; PreviewRoiHeight = size; }
+                PreviewRoiPreset = p?.ToString();
             }, _ => CanConfigureLive);
             ConfirmRoiCommand = new RelayCommand(_ =>
             {

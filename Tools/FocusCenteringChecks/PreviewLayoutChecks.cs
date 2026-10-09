@@ -43,6 +43,7 @@ internal static partial class PreviewDisplayChecks {
         var view=new LiveFocusDockableView {DataContext=vm,Foreground=Brushes.White,Background=new SolidColorBrush(Color.FromRgb(27,29,32))};
         vm.UpdateDeviceInfo(new CameraInfo {Connected=true,DeviceId="Synthetic.UI",XSize=4096,YSize=3072});
         vm.UpdateDeviceInfo(new FocuserInfo {Connected=true,DeviceId="Synthetic.Motor",Position=10000});
+        VerifySensorRoiPresets(vm,view,check);
         var star=new Cwseo.NINA.LiveFocus.Models.FocusStarSuggestion {Name="Example star",Magnitude=2,Altitude=70,Azimuth=135};
         vm.FocusTargets.Add(star);vm.SelectedFocusTarget=star;
         typeof(LiveFocusDockableVM).GetProperty(nameof(vm.LiveHfr)).SetValue(vm,2.25);

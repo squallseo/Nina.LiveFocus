@@ -27,6 +27,7 @@ ROI editing uses the main Image panel when it is visible; **Retake / Done** rema
 - Main **Image** output sends the live ROI, stretch and optional Bahtinov overlay to NINA, capped at 10 updates/second. Normal grayscale output shares the existing frozen bitmap; overlay output is rasterized for the host. There are no extra captures, image-history entries or file saves.
 - Mouse ROI selection in the main Image panel: click a star, drag the box to move it, or drag an edge/corner to resize. Yellow grips and cursor changes distinguish the actions. The external size label stays at a fixed screen size through zoom, rotation and flip. [Main Image ROI example](docs/live-focus-main-image-roi.png).
 - An explicit **Auto ROI** button; starting live preview preserves the chosen ROI.
+- ROI presets include **50%, 67%, 100% (Full)** of both sensor dimensions alongside 256/512/1024-pixel squares. Percentages preserve the sensor aspect ratio and selected star anchor; 50% uses roughly 25% of the pixels, 67% roughly 45%, and 100% the largest camera-aligned full frame. The percentage is relative to the camera sensor, independent of viewer size or zoom. Edges are clamped to the sensor; drag the box to move it or choose a custom size.
 - Exposure slider in 50 ms increments, optional Bahtinov mask overlay in Setup and a compact stretch slider beside the live controls. Stretch changes only the display, never raw measurements.
 - Optional diagnostic FITS/JSON recording and detailed timing logs. Recording is **off by default**; normal errors and warnings are still logged.
 

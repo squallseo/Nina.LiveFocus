@@ -115,6 +115,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 overviewPixels = frame.Pixels; overviewWidth = frame.Width; overviewHeight = frame.Height;
                 overviewSensorWidth = cached?.Properties.Width ?? DataModel.LastPreviewTiming.SourceWidth;
                 overviewSensorHeight = cached?.Properties.Height ?? DataModel.LastPreviewTiming.SourceHeight;
+                RaisePropertyChanged(nameof(HasRoiSensorDimensions)); RaisePropertyChanged(nameof(PreviewRoiPreset));
                 IsSelectingRoi = true;
                 UpdateRoiSelection();
                 RaisePropertyChanged(nameof(LiveDisplayImage)); RaisePropertyChanged(nameof(RoiLocationText));
