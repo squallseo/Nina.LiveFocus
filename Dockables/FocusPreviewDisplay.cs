@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Cwseo.NINA.LiveFocus.Models;
 using NINA.Core.Utility;
 
@@ -14,7 +15,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
     {
         // The frozen image retains its own raw preview for display adjustments.
         // Weak keys release that buffer when a frame is replaced; no image history.
-        private sealed record PreviewPixels(double[] Pixels, int Width, int Height, BahtinovMeasurement Overlay, double Strength);
+        private sealed record PreviewPixels(double[] Pixels, int Width, int Height, BahtinovMeasurement Overlay, double Strength, BitmapSource Bitmap);
         private readonly ConditionalWeakTable<ImageSource, PreviewPixels> previewPixels = new();
         private double previewStretchStrength = 1;
         private CancellationTokenSource stretchRefresh;

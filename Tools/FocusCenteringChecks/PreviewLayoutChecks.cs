@@ -92,6 +92,10 @@ internal static partial class PreviewDisplayChecks {
                 magnitudeInput.Text="1.5";magnitudeInput.GetBindingExpression(TextBox.TextProperty).UpdateSource();
                 check(vm.MaximumFocusMagnitude==1.5,"Magnitude input commits the user's brightness limit");
                 vm.MaximumFocusMagnitude=4;view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);
+                var mainOutput=(ToggleButton)view.FindName("MainImageOutputToggle");
+                mainOutput.IsChecked=true;
+                check(vm.ShowInNinaImage,"Setup's Image output toggle controls the live mirror");
+                mainOutput.IsChecked=false;
             }
             check(preview.ActualHeight<fullHeight && preview.ActualHeight>=180 && ((Button)view.FindName("EditRoiButton")).ActualHeight>=28,
                 "Expanded setup leaves a usable image and exposes ROI controls at "+label);

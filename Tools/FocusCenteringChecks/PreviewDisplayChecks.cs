@@ -46,7 +46,10 @@ internal static partial class PreviewDisplayChecks {
         var mount=Fake.Of<ITelescopeMediator>((m,a)=>m.Name switch {"GetInfo"=>new TelescopeInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var guider=Fake.Of<IGuiderMediator>((m,a)=>m.Name switch {"GetInfo"=>new GuiderInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var wheel=Fake.Of<IFilterWheelMediator>((m,a)=>m.Name is "RegisterConsumer" or "RemoveConsumer"?null:Fake.Unexpected(m));
-        var imaging=Fake.Of<IImagingMediator>((m,a)=>m.Name is "add_ImagePrepared" or "remove_ImagePrepared"?null:Fake.Unexpected(m));
+        int imageWrites=0,imageThread=0;BitmapSource mainImage=null;
+        object Display(BitmapSource image) {mainImage=image;imageWrites++;imageThread=Environment.CurrentManagedThreadId;return null;}
+        var imaging=Fake.Of<IImagingMediator>((m,a)=>m.Name switch {
+            "add_ImagePrepared" or "remove_ImagePrepared"=>null,"SetImage"=>Display((BitmapSource)a[0]),_=>Fake.Unexpected(m)});
         var status=Fake.Of<IApplicationStatusMediator>((m,a)=>m.Name=="StatusUpdate"?null:Fake.Unexpected(m));
         using var vm=new LiveFocusDockableVM(profiles,camera,imaging,wheel,motor,mount,guider,null,null,null,status);
         const int n=256;var random=new Random(9123);double angle=37*Math.PI/180;
@@ -81,6 +84,7 @@ internal static partial class PreviewDisplayChecks {
         type.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,false);
         vm.ResetPreviewStretchCommand.Execute(null);await Task.Delay(250);
         RenderControls(vm,check);
+        await VerifyMainImageOutput(vm,raw,()=> (mainImage,imageWrites,imageThread),check);
     }
 
 }

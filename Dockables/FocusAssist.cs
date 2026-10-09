@@ -66,6 +66,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 {
                     stretchRefresh?.Cancel(); _ = RefreshPreviewStretchAsync();
                 }
+                QueueMainImageOutput();
             }
         }
         public string FocusAssistStatus { get; private set; } = "Preview: center a star in the ROI. Exposure is not the delivered frame interval.";
@@ -176,6 +177,8 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             {
                 BeginAssist(false);
                 IsSelectingRoi = false;
+                liveImageOutputActive = true;
+                lastImageOutput = 0;
                 RaisePropertyChanged(nameof(RoiLocationText));
                 LiveHfrPoints.Clear();
                 var clock = Stopwatch.StartNew(); long previous = 0;
@@ -300,6 +303,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             {
                 // A capture error/Stop also cancels the motor. Hold reservation/UI
                 // ownership until both native stream cleanup and movement finish.
+                liveImageOutputActive = false;
                 assistCts?.Cancel();
                 try { if (stream != null) await stream.DisposeAsync(); }
                 catch { SetAssistStatus("Camera stream stop failed. Reconnect the camera before retrying."); throw; }
@@ -338,7 +342,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 }
             }
             var result = new DrawingImage(group); result.Freeze();
-            previewPixels.Add(result, new PreviewPixels(pixels, width, height, measurement, level));
+            previewPixels.Add(result, new PreviewPixels(pixels, width, height, measurement, level, bitmap));
             return result;
         }
     }

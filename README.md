@@ -18,6 +18,7 @@ Example layout rendered with synthetic test data. Exposure, In / Out steps and t
 - Bright-star selection from NINA's catalogue, with adjustable minimum altitude and maximum magnitude, plus profile horizon clearance. Every matching star is listed; there is no 20-star cap.
 - GOTO with NINA's configured plate solver to center the selected star. Guiding is stopped before slewing; restart it when ready to image.
 - Live ROI preview, local HFR history and the star intensity profile. On streaming cameras, preview continues during focuser movement.
+- Optional **Show in NINA Image** mirror sends the same live ROI, stretch and Bahtinov overlay to NINA's main Image panel, capped at 10 updates/second. It uses the existing stream and adds no captures, image history or file saves.
 - Mouse ROI selection: click a star, drag the box to move it, or drag an edge/corner to resize. Its size is shown outside the yellow box.
 - An explicit **Auto ROI** button; starting live preview preserves the chosen ROI.
 - Exposure slider in 50 ms increments, optional Bahtinov mask overlay in Setup and an image-footer stretch slider. Stretch changes only the display, never raw measurements.
@@ -64,6 +65,10 @@ NINA supplies its own libraries; do not copy every dependency from the build dir
 2. In Setup, choose **Edit ROI** to edit the full image, then **Done**, or use **Auto ROI** near the target star. Enable Bahtinov overlay here when using a mask.
 3. Fold Setup, set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR. Turn on Graphs when needed. Movement Stop and GOTO cancellation remain available with Setup folded.
 4. Adjust Stretch if the preview is too bright. Stop preview before changing exposure or ROI.
+
+For a larger image in the normal Imaging workspace, enable **Setup → Show in NINA Image**, open NINA's **Image** panel, then start live focus. The mirror is display-only: adjust stretch and read live HFR in Live Focus; NINA's raw-image statistics, processing and save tools continue to refer to normal captures. ROI mouse editing stays in Live Focus. Disabling the mirror or stopping live focus ends updates and leaves the last displayed frame in place; the next normal image replaces it. The mirror defaults off and never publishes while idle, selecting ROI or stopping.
+
+The mirror uses NINA's public [IImagingMediator.SetImage](https://github.com/isbeorn/nina/blob/develop/NINA.Equipment/Interfaces/Mediator/IImagingMediator.cs) display API, rather than preparing or recording every video frame.
 
 Streaming and diagnostics settings are in NINA's plugin options. Diagnostics, when enabled before an operation, are saved under `%LOCALAPPDATA%\NINA\LiveFocus\FocusDiagnostics`. Turning recording off stops further records; existing records remain available.
 

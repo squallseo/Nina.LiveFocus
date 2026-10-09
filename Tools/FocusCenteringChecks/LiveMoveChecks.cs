@@ -1,6 +1,7 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Windows.Media.Imaging;
 using Cwseo.NINA.LiveFocus.Dockables;
 using NINA.Core.Model;
 using NINA.Equipment.Equipment.MyCamera;
@@ -33,7 +34,7 @@ internal static class LiveMoveChecks {
         var firstFrame=Signal<bool>();var movingFrames=Signal<bool>();var resumedFrame=Signal<bool>();
         var moveStarted=Signal<bool>();var moveCanceled=Signal<bool>();var motorFinished=Signal<int>();
         var cameraClosing=Signal<bool>();var cameraFinished=Signal<bool>();
-        int starts=0,closes=0,frames=0,duringMove=0,releases=0,moves=0;
+        int starts=0,closes=0,frames=0,duringMove=0,releases=0,moves=0,imageWrites=0,movingImageWrites=0;
         object owner=null; LiveFocusDockableVM vm=null;
         var pixels=Enumerable.Range(0,128*128).Select(i=> {
             double x=i%128-64,y=i/128-64;
@@ -74,7 +75,15 @@ internal static class LiveMoveChecks {
         var guider=Fake.Of<IGuiderMediator>((m,a)=>m.Name switch {
             "GetInfo"=>new GuiderInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var wheel=Fake.Of<IFilterWheelMediator>((m,a)=>m.Name is "RegisterConsumer" or "RemoveConsumer"?null:Fake.Unexpected(m));
-        var imaging=Fake.Of<IImagingMediator>((m,a)=>m.Name is "add_ImagePrepared" or "remove_ImagePrepared"?null:Fake.Unexpected(m));
+        object Display(BitmapSource bitmap) {
+            if(!bitmap.IsFrozen || bitmap.PixelWidth!=128 || bitmap.PixelHeight!=128 || owner!=vm)
+                throw new Exception("Main Image must receive a frozen ROI while Live Focus owns capture");
+            Interlocked.Increment(ref imageWrites);
+            if(vm.IsMoving)Interlocked.Increment(ref movingImageWrites);
+            return null;
+        }
+        var imaging=Fake.Of<IImagingMediator>((m,a)=>m.Name switch {
+            "add_ImagePrepared" or "remove_ImagePrepared"=>null,"SetImage"=>Display((BitmapSource)a[0]),_=>Fake.Unexpected(m)});
         var status=Fake.Of<IApplicationStatusMediator>((m,a)=>m.Name=="StatusUpdate"?null:Fake.Unexpected(m));
         var settingsType=typeof(LiveFocusDockableVM).Assembly.GetType("Cwseo.NINA.LiveFocus.Properties.Settings");
         var settings=settingsType.GetProperty("Default").GetValue(null);
@@ -85,6 +94,7 @@ internal static class LiveMoveChecks {
                 typeof(LiveFocusDockableVM).GetProperty(nameof(vm.CameraInfo)).SetValue(vm,cameraInfo);
                 typeof(LiveFocusDockableVM).GetProperty(nameof(vm.FocuserInfo)).SetValue(vm,focuserInfo);
                 vm.UserStep=600;
+                vm.ShowInNinaImage=true;
                 vm.PropertyChanged+=(_,e)=> {
                     if(e.PropertyName!=nameof(vm.FocusPreviewImage))return;
                     Interlocked.Increment(ref frames);firstFrame.TrySetResult(true);
@@ -101,6 +111,8 @@ internal static class LiveMoveChecks {
                 vm.PreviewStretchStrength=.5;await Task.Delay(200);
                 check(starts==1 && closes==0 && owner==vm && vm.IsMoving && vm.PreviewStretchStrength==.5,
                     "Display stretch changes during travel keep the same camera stream and motor task");
+                check(imageWrites>0 && movingImageWrites>0 && vm.ShowInNinaImage,
+                    "Main Image mirrors live ROI frames during focuser travel without extra captures or restarting video");
                 motorFinished.SetResult(10600);await resumedFrame.Task.WaitAsync(TimeSpan.FromSeconds(5));
                 check(starts==1 && closes==0 && vm.PreviewMoveInCommand.CanExecute(null),"Movement completion re-enables controls with the same stream");
                 moveStarted=Signal<bool>();motorFinished=Signal<int>();
@@ -113,6 +125,8 @@ internal static class LiveMoveChecks {
                 motorFinished.SetResult(10000);check(await live.WaitAsync(TimeSpan.FromSeconds(5))==0,"Stop returns a canceled preview after motor cleanup");
                 check(owner==null && releases==1 && !vm.IsMoving && !vm.IsFocusAssistRunning && vm.CanConfigureLive,
                     "Both cleanups finish before reservation and UI locks are released");
+                int stoppedWrites=imageWrites;await Task.Delay(150);
+                check(imageWrites==stoppedWrites,"Stopped live focus cannot overwrite the main viewer after releasing capture ownership");
                 // A failed motor task must also be observed, cancel the stream,
                 // and release ownership without another movement or capture.
                 firstFrame=Signal<bool>();moveStarted=Signal<bool>();motorFinished=Signal<int>();closes=0;
