@@ -24,9 +24,8 @@ internal static partial class PreviewDisplayChecks
         check(percentages.All(i=>i.IsEnabled),"Connecting a sensor enables the percentage choices through their real bindings");
         typeof(LiveFocusDockableVM).GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,true);
         Choose("Inspector");
-        var overlay=Children(view).OfType<System.Windows.Controls.Primitives.ToggleButton>().Single(t=>Equals(t.Content,"Bahtinov overlay"));
-        check(inspector.IsEnabled && vm.IsAberrationInspector && !vm.IsSelectingRoi && !overlay.IsEnabled && Equals(combo.SelectedValue,"Inspector"),
-            "The actual Inspector dropdown ends ROI editing and disables the single-star overlay through its binding");
+        check(inspector.IsEnabled && vm.IsAberrationInspector && !vm.IsSelectingRoi && !vm.CanUseBahtinovOverlay && Equals(combo.SelectedValue,"Inspector"),
+            "The actual Inspector dropdown ends ROI editing and disables the single-star overlay for Inspector mode");
         vm.PreviewCenterX=60;vm.PreviewCenterY=40;
         Choose("50%");var half=vm.PreviewRoiRectangle;
         check(half.Width==4788 && half.Height==3192 && vm.PreviewRoiPreset=="50%" && Equals(combo.SelectedValue,"50%"),

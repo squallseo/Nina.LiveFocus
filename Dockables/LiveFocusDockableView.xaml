@@ -207,7 +207,7 @@
                 </Style>
               </Button.Style>
             </Button>
-            <Button Content="Auto ROI" Command="{Binding AutoRoiCommand}" Style="{StaticResource FocusButton}" Margin="0,0,8,0" ToolTip="Find a star near the selected area and size its box. With Bahtinov overlay enabled, include the mask pattern. Stop preview before selecting." />
+            <Button Content="Auto ROI" Command="{Binding AutoRoiCommand}" Style="{StaticResource FocusButton}" Margin="0,0,8,0" ToolTip="Find a star near the selected area and size its box. Stop preview before selecting." />
             <ComboBox Width="120" SelectedValuePath="Tag" SelectedValue="{Binding PreviewRoiPreset, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" MinHeight="28" Margin="0,0,8,0" ToolTip="Choose a single ROI or Inspector 3×3 to compare the full sensor. Percentages scale both sensor dimensions: 50% uses 25% of the pixel area; 67% approximates a 1.5x crop. 100% uses the full sensor within camera alignment limits. For a custom size, drag the yellow box edges." AutomationProperties.Name="ROI size preset">
               <ComboBoxItem Content="256 px" Tag="256" />
               <ComboBoxItem Content="512 px" Tag="512" />
@@ -295,31 +295,14 @@
           </Grid>
         </StackPanel>
       </Border>
-      <Expander x:Name="SetupExpander" IsExpanded="False" Margin="2,0,2,4" ToolTip="Slew to a star, deep-sky object, Moon or planet, set an absolute focuser position, or adjust display options. Fold this after setup to enlarge the image.">
+      <Expander x:Name="SetupExpander" IsExpanded="False" Margin="2,0,2,4" ToolTip="Choose a star, deep-sky object, Moon or planet, then Slew or Slew + Center. Fold this after choosing a target to enlarge the image.">
         <Expander.Header>
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="Setup" FontWeight="SemiBold" />
-            <TextBlock Text="GOTO · Position · Display" FontSize="11" Foreground="{StaticResource SecondaryBrush}" Margin="10,0,0,0" VerticalAlignment="Center" />
-          </StackPanel>
+          <TextBlock Text="Go to target" FontWeight="SemiBold" />
         </Expander.Header>
         <ScrollViewer x:Name="ControlsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <local:FocusCardsPanel Margin="0,6,0,0">
-            <Border x:Name="RoiSetupCard" Style="{StaticResource FocusCard}">
+          <StackPanel Margin="0,6,0,0">
+            <Border x:Name="StarSetupCard" Style="{StaticResource FocusCard}" Padding="10">
               <StackPanel>
-
-                <ToggleButton Content="Bahtinov overlay" IsChecked="{Binding AnalyzeBahtinov, Mode=TwoWay}" IsEnabled="{Binding CanUseBahtinovOverlay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip="Draw diffraction lines in single-ROI view (unavailable in Inspector 3×3). Remove the mask before plate solving." />
-                <ToggleButton x:Name="MainImageOutputToggle" Content="Use NINA Image" IsChecked="{Binding ShowInNinaImage, Mode=TwoWay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip="Display the live ROI, stretch and overlay in NINA's Image panel (up to 10 updates/sec). Display only: NINA's raw-image statistics and save tools still refer to normal captures. The local preview is hidden except while editing ROI." />
-                <TextBlock Text="Absolute position" FontWeight="SemiBold" Margin="0,10,0,6" />
-                <WrapPanel Margin="0,0,0,6">
-                  <TextBlock Text="Target" Width="40" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
-                  <TextBox Text="{Binding TargetPosition, UpdateSourceTrigger=LostFocus}" Width="68" Margin="0,0,8,0" AutomationProperties.Name="Target focuser position" ToolTip="Absolute focuser position." />
-                  <Button Content="Move" Command="{Binding MoveToPositionCommand}" Style="{StaticResource FocusButton}" Margin="0,0,6,0" />
-                </WrapPanel>
-              </StackPanel>
-            </Border>
-            <Border x:Name="StarSetupCard" Grid.Row="1" Style="{StaticResource FocusCard}" Padding="10">
-              <StackPanel>
-                <TextBlock Text="Go to target" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6" />
                 <Grid x:Name="TargetCriteriaRow" Margin="0,0,0,6">
                   <Grid.ColumnDefinitions><ColumnDefinition Width="104" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                   <ComboBox x:Name="TargetCategoryPicker" ItemsSource="{Binding TargetKinds}" SelectedItem="{Binding SelectedTargetKind, Mode=TwoWay}" IsEnabled="{Binding CanEditTargets}" MinHeight="28" Margin="0,0,6,0" AutomationProperties.Name="Target category">
@@ -379,7 +362,7 @@
                 <TextBlock Text="{Binding FocusTargetStatus}" TextTrimming="CharacterEllipsis" ToolTip="{Binding FocusTargetStatus}" Foreground="{StaticResource SecondaryBrush}" FontSize="11" MinHeight="18" />
               </StackPanel>
             </Border>
-          </local:FocusCardsPanel>
+          </StackPanel>
         </ScrollViewer>
       </Expander>
     </StackPanel>
@@ -430,7 +413,7 @@
                 </Style>
               </Image.Style>
             </Image>
-            <TextBlock Text="Open Setup to choose a star area, then press the video button." TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="240" Margin="12" Foreground="{StaticResource SecondaryBrush}">
+            <TextBlock Text="Choose an ROI above, then press the video button." TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="240" Margin="12" Foreground="{StaticResource SecondaryBrush}">
               <TextBlock.Style>
                 <Style TargetType="TextBlock">
                   <Setter Property="Visibility" Value="Collapsed" />

@@ -125,15 +125,12 @@ internal static partial class PreviewDisplayChecks {
                 magnitudeInput.Text="1.5";magnitudeInput.GetBindingExpression(TextBox.TextProperty).UpdateSource();
                 check(vm.MaximumFocusMagnitude==1.5,"Magnitude input commits the user's brightness limit");
                 vm.MaximumFocusMagnitude=4;view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);
-                var mainOutput=(ToggleButton)view.FindName("MainImageOutputToggle");
-                mainOutput.IsChecked=true;
-                check(vm.ShowInNinaImage,"Setup's Image output toggle controls the live mirror");
-                mainOutput.IsChecked=false;
+                check(view.FindName("MainImageOutputToggle")==null && view.FindName("RoiSetupCard")==null,
+                    "Setup contains only Go to target and no display or absolute-position card");
                 view.UpdateLayout();
             }
             check(preview.ActualHeight<fullHeight && preview.ActualHeight>=180 && ((Button)view.FindName("EditRoiButton")).ActualHeight>=28,
                 "Expanded setup leaves a usable image and exposes ROI controls at "+label+$" (image {preview.ActualHeight}, full {fullHeight}, ROI {((Button)view.FindName("EditRoiButton")).ActualHeight})");
-            var roiCard=(FrameworkElement)view.FindName("RoiSetupCard");
             var starCard=(FrameworkElement)view.FindName("StarSetupCard");
             var altitudeInput=(TextBox)view.FindName("MinimumAltitudeInput");
             var magnitudeBounds=magnitudeInput.TransformToAncestor(starCard).TransformBounds(new Rect(magnitudeInput.RenderSize));
@@ -146,9 +143,8 @@ internal static partial class PreviewDisplayChecks {
                 altitudeBounds.Left>=categoryBounds.Right && Math.Abs(altitudeBounds.Top-magnitudeBounds.Top)<2 &&
                 Math.Abs(categoryBounds.Top+categoryBounds.Height/2-altitudeBounds.Top-altitudeBounds.Height/2)<2,
                 "Stars show Alt and Mag on the category row in place of name search at "+label);
-            check(width<616 ? starCard.TranslatePoint(new Point(),view).Y>=roiCard.TranslatePoint(new Point(),view).Y+roiCard.ActualHeight
-                : starCard.TranslatePoint(new Point(),view).X>=roiCard.TranslatePoint(new Point(),view).X+roiCard.ActualWidth,
-                "ROI and star setup cards do not overlap on initial layout or resizing at "+label);
+            check(starCard.ActualWidth>=((ScrollViewer)view.FindName("ControlsScrollViewer")).ActualWidth-22,
+                "Go to target uses the full setup width without an empty second column at "+label);
             var controlsScroll=(ScrollViewer)view.FindName("ControlsScrollViewer");
             var videoY=video.TranslatePoint(new Point(),view).Y;
             controlsScroll.ScrollToEnd();view.UpdateLayout();
