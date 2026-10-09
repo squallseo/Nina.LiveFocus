@@ -217,6 +217,26 @@
             <Button x:Name="HaltMoveButton" Content="Stop" Command="{Binding HaltFocuserCommand}" Style="{StaticResource FocusButton}" Visibility="{Binding IsMoving, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Cancel the current focuser move." />
             <Button x:Name="CancelGotoButton" Content="Cancel GOTO" Command="{Binding CancelGotoCommand}" Style="{StaticResource FocusButton}" Margin="6,0,0,0" Visibility="{Binding IsGoingToFocusTarget, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Cancel the slew or plate-solve centering, even with setup folded." />
           </WrapPanel>
+          <DockPanel Margin="0,6,0,0">
+            <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Graphs" Style="{StaticResource FocusSwitch}" IsChecked="False" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show HFR history and the star profile." />
+            <TextBlock x:Name="CompactMetric" Text="{Binding LiveHfrText}" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
+          </DockPanel>
+          <Grid x:Name="PreviewStretchControls" ToolTip="Display only: left is darker, right is brighter. Raw focus measurements are unchanged.">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Stretch" VerticalAlignment="Center" FontSize="11" Margin="0,0,8,0" />
+            <Slider Grid.Column="1" Minimum="0.25" Maximum="2.5" Value="{Binding PreviewStretchStrength, Mode=TwoWay}" SmallChange="0.05" LargeChange="0.25" TickFrequency="0.05" IsSnapToTickEnabled="True" VerticalAlignment="Center" AutomationProperties.Name="Preview stretch strength" />
+            <TextBlock Grid.Column="2" Text="{Binding PreviewStretchText}" Width="39" FontSize="11" TextAlignment="Right" VerticalAlignment="Center" Margin="6,0" />
+            <Button Grid.Column="3" Command="{Binding ResetPreviewStretchCommand}" Style="{StaticResource FocusButton}" Width="28" Padding="5" Margin="0,0,0,0" ToolTip="Reset automatic stretch to 1.00×" AutomationProperties.Name="Reset preview stretch">
+              <Viewbox Width="14" Height="14">
+                <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 16,2 L 16,7 L 11,7 L 13,5 A 6,6 0 1 0 14,11 L 16,11 A 8,8 0 1 1 14.5,3.5 Z" />
+              </Viewbox>
+            </Button>
+          </Grid>
         </StackPanel>
       </Border>
       <Expander x:Name="SetupExpander" IsExpanded="False" Margin="2,0,2,4" ToolTip="Choose the star area, slew to a focus star or set an absolute focuser position. Fold this after setup to enlarge the image.">
@@ -258,7 +278,7 @@
 
                 </WrapPanel>
                 <ToggleButton Content="Bahtinov overlay" IsChecked="{Binding AnalyzeBahtinov, Mode=TwoWay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip="Draw the detected diffraction lines for manual focusing with a Bahtinov mask. Remove the mask before plate solving." />
-                <ToggleButton x:Name="MainImageOutputToggle" Content="Show in NINA Image" IsChecked="{Binding ShowInNinaImage, Mode=TwoWay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip="Mirror the live ROI, stretch and overlay in NINA's Image panel (up to 10 updates/sec). Display only: NINA's raw-image statistics and save tools still refer to normal captures. ROI mouse editing stays in Live Focus." />
+                <ToggleButton x:Name="MainImageOutputToggle" Content="Use NINA Image" IsChecked="{Binding ShowInNinaImage, Mode=TwoWay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip="Display the live ROI, stretch and overlay in NINA's Image panel (up to 10 updates/sec). Display only: NINA's raw-image statistics and save tools still refer to normal captures. The local preview is hidden except while editing ROI." />
                 <TextBlock Text="Absolute position" FontWeight="SemiBold" Margin="0,10,0,6" />
                 <WrapPanel Margin="0,0,0,6">
                   <TextBlock Text="Target" Width="40" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
@@ -285,7 +305,6 @@
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
                   <ComboBox x:Name="FocusStarPicker" MinHeight="28" ItemsSource="{Binding FocusTargets}" SelectedItem="{Binding SelectedFocusTarget}" MaxDropDownHeight="240" AutomationProperties.Name="Focus star" ToolTip="NINA bright-star catalogue filtered by altitude, magnitude and profile horizon. Every matching star is listed, ordered by altitude.">
                     <ComboBox.ItemTemplate>
@@ -299,23 +318,11 @@
                       <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 16,2 L 16,7 L 11,7 L 13,5 A 6,6 0 1 0 14,11 L 16,11 A 8,8 0 1 1 14.5,3.5 Z" />
                     </Viewbox>
                   </Button>
-                  <Button x:Name="GotoButton" Grid.Column="2" Width="58" Margin="6,0,0,0" ToolTipService.ShowOnDisabled="True">
-                    <Button.Style>
-                      <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                        <Setter Property="Content" Value="GOTO" />
-                        <Setter Property="Command" Value="{Binding GotoFocusTargetCommand}" />
-                        <Setter Property="ToolTip" Value="{Binding GotoFocusTargetTooltip}" />
-                        <Style.Triggers>
-                          <DataTrigger Binding="{Binding IsGoingToFocusTarget}" Value="True">
-                            <Setter Property="Content" Value="Cancel" />
-                            <Setter Property="Command" Value="{Binding CancelGotoCommand}" />
-                            <Setter Property="ToolTip" Value="Cancel the slew or plate-solve centering." />
-                          </DataTrigger>
-                        </Style.Triggers>
-                      </Style>
-                    </Button.Style>
-                  </Button>
                 </Grid>
+                <WrapPanel Margin="0,0,0,6">
+                  <Button x:Name="SlewButton" Content="Slew" Command="{Binding SlewFocusTargetCommand}" ToolTip="{Binding SlewFocusTargetTooltip}" ToolTipService.ShowOnDisabled="True" Style="{StaticResource FocusButton}" MinWidth="58" Margin="0,0,6,0" />
+                  <Button x:Name="GotoButton" Content="Slew + Center" Command="{Binding GotoFocusTargetCommand}" ToolTip="{Binding GotoFocusTargetTooltip}" ToolTipService.ShowOnDisabled="True" Style="{StaticResource FocusButton}" />
+                </WrapPanel>
                 <TextBlock Text="{Binding FocusTargetStatus}" TextTrimming="CharacterEllipsis" ToolTip="{Binding FocusTargetStatus}" Foreground="{StaticResource SecondaryBrush}" FontSize="11" MinHeight="18" />
               </StackPanel>
             </Border>
@@ -337,29 +344,26 @@
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
-          <StackPanel Margin="0,0,0,6">
-          <DockPanel>
+
+          <DockPanel Margin="0,0,0,6">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Visibility="{Binding IsSelectingRoi, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
               <Button x:Name="RetakeRoiButton" Content="Retake" Command="{Binding RefreshRoiImageCommand}" Style="{StaticResource FocusButton}" Margin="6,0,6,0" ToolTip="Replace the full image with a new exposure." />
               <Button x:Name="ConfirmRoiButton" Content="Done" Command="{Binding ConfirmRoiCommand}" Style="{StaticResource FocusButton}" ToolTip="Keep this star area and return to live preview." />
             </StackPanel>
-            <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Graphs" Style="{StaticResource FocusSwitch}" IsChecked="False" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show HFR history and the star profile; hide them to enlarge the image."/>
-          <TextBlock x:Name="CompactMetric" FontWeight="SemiBold" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center">
-            <TextBlock.Style>
-              <Style TargetType="TextBlock">
-                <Setter Property="Text" Value="{Binding LiveHfrText}" />
-                <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                    <Setter Property="Text" Value="ROI · drag to move / resize" />
-                  </DataTrigger>
-                </Style.Triggers>
-              </Style>
-            </TextBlock.Style>
-          </TextBlock>
+            <TextBlock FontSize="11" VerticalAlignment="Center">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="Text" Value="Star preview" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
+                      <Setter Property="Text" Value="ROI · drag to move / resize" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
           </DockPanel>
-          </StackPanel>
           <Grid x:Name="PreviewSurface" Grid.Row="1" Background="#101214" MouseLeftButtonDown="OnPreviewDown" MouseMove="OnPreviewMove" MouseLeftButtonUp="OnPreviewUp" LostMouseCapture="OnPreviewCaptureLost" SizeChanged="OnPreviewSizeChanged">
             <Image x:Name="PreviewImage" Source="{Binding LiveDisplayImage}" SizeChanged="OnPreviewSizeChanged" Stretch="Uniform" ToolTip="{Binding RoiLocationText}">
               <Image.Style>
@@ -394,24 +398,7 @@
               </Rectangle>
             </Canvas>
           </Grid>
-          <StackPanel Grid.Row="2" Margin="0,8,0,0">
-            <Grid x:Name="PreviewStretchControls" ToolTip="Display only: left is darker, right is brighter. Raw focus measurements are unchanged.">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-              </Grid.ColumnDefinitions>
-              <TextBlock Text="Stretch" VerticalAlignment="Center" FontSize="11" Margin="0,0,8,0" />
-              <Slider Grid.Column="1" Minimum="0.25" Maximum="2.5" Value="{Binding PreviewStretchStrength, Mode=TwoWay}" SmallChange="0.05" LargeChange="0.25" TickFrequency="0.05" IsSnapToTickEnabled="True" VerticalAlignment="Center" AutomationProperties.Name="Preview stretch strength" />
-              <TextBlock Grid.Column="2" Text="{Binding PreviewStretchText}" Width="39" FontSize="11" TextAlignment="Right" VerticalAlignment="Center" Margin="6,0" />
-              <Button Grid.Column="3" Command="{Binding ResetPreviewStretchCommand}" Style="{StaticResource FocusButton}" Width="28" Padding="5" Margin="0,0,0,0" ToolTip="Reset automatic stretch to 1.00×" AutomationProperties.Name="Reset preview stretch">
-                <Viewbox Width="14" Height="14">
-                  <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 16,2 L 16,7 L 11,7 L 13,5 A 6,6 0 1 0 14,11 L 16,11 A 8,8 0 1 1 14.5,3.5 Z" />
-                </Viewbox>
-              </Button>
-            </Grid>
-          </StackPanel>
+
         </Grid>
       </Border>
       <Grid x:Name="MeasurementsPanel" Grid.Column="1">

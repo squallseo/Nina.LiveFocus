@@ -12,7 +12,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
 {
     public partial class LiveFocusDockableVM
     {
-        private bool showInNinaImage;
+        private bool showInNinaImage = true;
         private bool liveImageOutputActive;
         private int imageOutputQueued;
         private long lastImageOutput;

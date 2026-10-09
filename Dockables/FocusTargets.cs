@@ -7,6 +7,7 @@ using NINA.Astrometry;
 using NINA.Core.Utility;
 using NINA.Core.Model;
 using NINA.PlateSolving;
+using NINA.PlateSolving.Interfaces;
 using NINA.Profile.Interfaces;
 using NINA.Equipment.Interfaces;
 using NINA.Equipment.Equipment.MyGuider.PHD2;
@@ -33,6 +34,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public AsyncObservableCollection<FocusStarSuggestion> FocusTargets { get; } = new();
         public ICommand RefreshFocusTargetsCommand { get; private set; }
         public ICommand GotoFocusTargetCommand { get; private set; }
+        public ICommand SlewFocusTargetCommand { get; private set; }
         public ICommand CancelGotoCommand { get; private set; }
         public string FocusTargetStatus { get; private set; } = "Refresh to find bright stars using the NINA profile location.";
         public bool IsGoingToFocusTarget => isGoingToFocusTarget;
@@ -57,32 +59,33 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             focusProfileService = service;
             RefreshFocusTargetsCommand = new AsyncCommand<int>(() => RunGuarded("Find focus stars", RefreshFocusTargetsAsync), _ => !refreshingFocusTargets && !isGoingToFocusTarget);
             GotoFocusTargetCommand = new AsyncCommand<int>(() => RunGuarded("Goto focus star", GotoFocusTargetAsync), _ => CanGotoFocusTarget());
+            SlewFocusTargetCommand = new AsyncCommand<int>(() => RunGuarded("Slew to focus star", SlewFocusTargetAsync), _ => GotoUnavailableReason(false) == null);
             CancelGotoCommand = new RelayCommand(_ => gotoCts?.Cancel(), _ => isGoingToFocusTarget);
         }
 
-        private string GotoUnavailableReason
+        private string GotoUnavailableReason(bool center)
         {
-            get
-            {
-                if (disposed) return "The focus panel is closed.";
-                if (isGoingToFocusTarget) return "GOTO/centering is running. Use Cancel to stop.";
-                if (SelectedFocusTarget == null) return "Select a focus star. Use Refresh if the list is empty.";
-                if (TelescopeInfo?.Connected != true) return "Connect the mount.";
-                if (TelescopeInfo.AtPark) return "Unpark the mount in NINA's telescope controls.";
-                if (TelescopeInfo.Slewing) return "Wait for the mount slew to finish.";
-                if (IsMoving) return "Wait for focus movement to finish.";
-                if (IsCapturing) return "Stop live focus or wait for the current capture to finish.";
-                if (CameraInfo?.Connected != true) return "Connect the camera for plate-solve centering.";
-                if (!cameraMediator.IsFreeToCapture(this)) return "The camera is in use by another NINA operation. Stop it or wait for completion.";
-                return null;
-            }
+            if (disposed) return "The focus panel is closed.";
+            if (isGoingToFocusTarget) return "Target movement is running. Use Cancel to stop.";
+            if (SelectedFocusTarget == null) return "Select a focus star. Use Refresh if the list is empty.";
+            if (TelescopeInfo?.Connected != true) return "Connect the mount.";
+            if (TelescopeInfo.AtPark) return "Unpark the mount in NINA's telescope controls.";
+            if (TelescopeInfo.Slewing) return "Wait for the mount slew to finish.";
+            if (IsMoving) return "Wait for focus movement to finish.";
+            if (IsCapturing) return "Stop live focus or wait for the current capture to finish.";
+            if (center && CameraInfo?.Connected != true) return "Connect the camera for plate-solve centering.";
+            if (CameraInfo?.Connected == true && !cameraMediator.IsFreeToCapture(this))
+                return "The camera is in use by another NINA operation. Stop it or wait for completion.";
+            return null;
         }
 
-        public string GotoFocusTargetTooltip => GotoUnavailableReason ??
+        public string GotoFocusTargetTooltip => GotoUnavailableReason(true) ??
             "Slew to the selected star, then plate solve and center using NINA's Plate Solving settings. " +
             "A connected guider is stopped before the slew and stays stopped for focusing. Remove the Bahtinov mask for solving.";
+        public string SlewFocusTargetTooltip => GotoUnavailableReason(false) ??
+            "Slew to the selected coordinates without capturing, plate solving or syncing. A connected guider is stopped first. Centering is not verified.";
 
-        private bool CanGotoFocusTarget() => GotoUnavailableReason == null;
+        private bool CanGotoFocusTarget() => GotoUnavailableReason(true) == null;
 
         // NINA's PHD2 StopGuiding returns false when already stopped/looping.
         // Read the public device state to distinguish that case from stop failure.
@@ -94,10 +97,11 @@ namespace Cwseo.NINA.LiveFocus.Dockables
 
         private void RefreshGotoAvailability()
         {
-            string reason = GotoUnavailableReason;
+            string reason = GotoUnavailableReason(true) + "|" + GotoUnavailableReason(false);
             if (reason == lastGotoUnavailableReason) return;
             lastGotoUnavailableReason = reason;
             RaisePropertyChanged(nameof(GotoFocusTargetTooltip));
+            RaisePropertyChanged(nameof(SlewFocusTargetTooltip));
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -146,28 +150,35 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             finally { refreshingFocusTargets = false; CommandManager.InvalidateRequerySuggested(); }
         }
 
-        private async Task<int> GotoFocusTargetAsync()
+        private Task<int> GotoFocusTargetAsync() => MoveFocusTargetAsync(true);
+        private Task<int> SlewFocusTargetAsync() => MoveFocusTargetAsync(false);
+        private async Task<int> MoveFocusTargetAsync(bool center)
         {
-            if (!CanGotoFocusTarget()) return 0;
+            if (GotoUnavailableReason(center) != null) return 0;
             var target = CalculateSuggestion(SelectedFocusTarget.Name, SelectedFocusTarget.Coordinates, SelectedFocusTarget.Magnitude);
             if (!AboveFocusHorizon(target)) throw new InvalidOperationException("Star is below the current altitude/horizon limit. Refresh the list.");
             if (!double.IsFinite(target.Magnitude) || target.Magnitude > MaximumFocusMagnitude)
                 throw new InvalidOperationException("Star is outside the current magnitude limit. Refresh the list.");
             // Snapshot all capture/solver settings and resolve the configured solver
             // before moving the mount. These are NINA's own Center services/exports.
-            var profile = focusProfileService.ActiveProfile;
-            var centering = new FocusTargetCentering(profile, cameraMediator.GetInfo(), target.Coordinates);
-            string cameraId = cameraMediator.GetInfo().DeviceId;
-            var solver = plateSolverFactory.GetCenteringSolver(
-                plateSolverFactory.GetPlateSolver(profile.PlateSolveSettings),
-                plateSolverFactory.GetBlindSolver(profile.PlateSolveSettings),
-                imagingMediator, telescopeMediator, filterWheelMediator, domeMediator, domeFollower);
+            FocusTargetCentering centering = null;
+            ICenteringSolver solver = null;
+            string cameraId = CameraInfo?.DeviceId;
+            if (center)
+            {
+                var profile = focusProfileService.ActiveProfile;
+                centering = new FocusTargetCentering(profile, cameraMediator.GetInfo(), target.Coordinates);
+                solver = plateSolverFactory.GetCenteringSolver(
+                    plateSolverFactory.GetPlateSolver(profile.PlateSolveSettings),
+                    plateSolverFactory.GetBlindSolver(profile.PlateSolveSettings),
+                    imagingMediator, telescopeMediator, filterWheelMediator, domeMediator, domeFollower);
+            }
             bool guidingPrepared = false;
             void CheckDevices()
             {
-                var camera = cameraMediator.GetInfo();
+                var camera = center ? cameraMediator.GetInfo() : null;
                 var mount = telescopeMediator.GetInfo();
-                if (disposed || camera?.Connected != true || camera.DeviceId != cameraId ||
+                if (disposed || (center && (camera?.Connected != true || camera.DeviceId != cameraId)) ||
                     mount?.Connected != true || mount.AtPark)
                     throw new InvalidOperationException("Camera/mount state changed during focus-star centering. GOTO stopped.");
                 if (guidingPrepared && guiderMediator.GetInfo()?.Connected == true)
@@ -177,7 +188,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                         throw new InvalidOperationException("Guiding resumed during focus-star centering. Stop guiding and retry GOTO.");
                 }
             }
-            solver.CaptureSolver = new GuardedFocusCaptureSolver(solver.CaptureSolver, CheckDevices);
+            if (center) solver.CaptureSolver = new GuardedFocusCaptureSolver(solver.CaptureSolver, CheckDevices);
             gotoCts = new CancellationTokenSource();
             var runCts = gotoCts;
             isGoingToFocusTarget = true;
@@ -209,8 +220,11 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             });
             try
             {
-                cameraMediator.RegisterCaptureBlock(this);
-                ownsCaptureBlock = true;
+                if (center || CameraInfo?.Connected == true)
+                {
+                    cameraMediator.RegisterCaptureBlock(this);
+                    ownsCaptureBlock = true;
+                }
                 CheckDevices(); runCts.Token.ThrowIfCancellationRequested();
                 guiderMediator.GuidingStarted += onGuidingStarted;
                 observingGuiding = true;
@@ -239,8 +253,14 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 var dome = domeMediator.GetInfo();
                 if (dome?.Connected == true && dome.CanSetAzimuth && !domeFollower.IsFollowing)
                 {
-                    ReportStatus("Synchronizing dome before plate solving…");
+                    ReportStatus(center ? "Synchronizing dome before plate solving…" : "Synchronizing dome…");
                     if (!await domeFollower.TriggerTelescopeSync()) throw new InvalidOperationException("Dome synchronization did not complete.");
+                }
+                runCts.Token.ThrowIfCancellationRequested(); CheckDevices();
+                if (!center)
+                {
+                    ReportStatus($"Slewed to {target.Name}. Centering was not requested or verified.");
+                    return 1;
                 }
                 ReportStatus($"Centering {target.Name} | Full-frame plate solving ({centering.Sequence.ExposureTime:F1} s)…");
                 double error = await centering.CenterAsync(solver, NullProgress<PlateSolveProgress>.Instance, progress, runCts.Token);
@@ -259,7 +279,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             }
             catch (Exception e)
             {
-                ReportStatus((slewCompleted ? "Slew completed; centering failed. " : "GOTO did not complete. ") + e.Message);
+                ReportStatus((slewCompleted ? center ? "Slew completed; centering failed. " : "Slew completed; post-slew operation failed. " : "GOTO did not complete. ") + e.Message);
                 throw;
             }
             finally

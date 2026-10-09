@@ -325,6 +325,13 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             var bytes = FocusDisplayStretch.Render(pixels, level);
             var bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray8, null, bytes, width);
             bitmap.Freeze();
+            if (measurement?.IsValid != true)
+            {
+                // Normal video uses this same bitmap in the chosen viewer: no
+                // DrawingImage wrapper, second pixel buffer or extra rasterization.
+                previewPixels.Add(bitmap, new PreviewPixels(pixels, width, height, measurement, level, bitmap));
+                return bitmap;
+            }
             var group = new DrawingGroup();
             using (var drawing = group.Open())
             {

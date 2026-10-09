@@ -20,7 +20,7 @@ internal static partial class PreviewDisplayChecks {
         void Selecting(bool value)=>type.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,value);
         ImageSource Render(BahtinovMeasurement mask=null)=>(ImageSource)render.Invoke(vm,new object[]{raw,256,256,mask,null});
         var preview=Render();
-        check(!vm.ShowInNinaImage && output().Count==0,"Main Image output defaults off and never touches the host viewer during normal preview");
+        check(!vm.ShowInNinaImage && output().Count==0,"Local preview mode never touches the host viewer during normal preview");
         vm.ShowInNinaImage=true;
         check(output().Count==0,"Enabling output while idle does not overwrite a normal capture");
         type.GetField("assistRunning",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(vm,true);
@@ -29,8 +29,8 @@ internal static partial class PreviewDisplayChecks {
         Running(true);source.SetValue(vm,preview);
         var first=output();
         var bytes=new byte[256*256];first.Image.CopyPixels(bytes,256,0);
-        check(first.Count==1 && first.Image.IsFrozen && first.Image.PixelWidth==256 && first.Image.PixelHeight==256 && bytes.SequenceEqual(FocusDisplayStretch.Render(raw)),
-            "NINA Image receives the same frozen, stretched ROI through SetImage without raw-image preparation");
+        check(first.Count==1 && ReferenceEquals(first.Image,vm.FocusPreviewImage) && first.Image.IsFrozen && first.Image.PixelWidth==256 && first.Image.PixelHeight==256 && bytes.SequenceEqual(FocusDisplayStretch.Render(raw)),
+            "NINA Image reuses the exact frozen ROI bitmap without duplicate pixel buffers or raw-image preparation");
         int before=output().Count;
         for(int i=0;i<50;i++)source.SetValue(vm,preview);
         check(output().Count==before,"Fast camera frames do not flood the main viewer above its update limit");

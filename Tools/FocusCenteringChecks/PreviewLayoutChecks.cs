@@ -56,6 +56,20 @@ internal static partial class PreviewDisplayChecks {
         var toggle=(ToggleButton)view.FindName("MeasurementsToggle");
         var metric=(TextBlock)view.FindName("CompactMetric");
         check(!setup.IsExpanded && toggle.IsChecked==false,"Occasional setup and graphs start folded");
+        view.Measure(new Size(350,500));view.Arrange(new Rect(0,0,350,500));view.UpdateLayout();
+        view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);view.UpdateLayout();
+        check(vm.ShowInNinaImage && workspace.Visibility==Visibility.Collapsed && ((FrameworkElement)view.FindName("PreviewCard")).Visibility==Visibility.Collapsed,
+            "NINA Image is the default output and the duplicate local view uses no workspace");
+        check(((FrameworkElement)view.FindName("EssentialControls")).ActualHeight<170 && metric.Visibility==Visibility.Visible,
+            "Image-only mode retains compact HFR, stretch and motor controls");
+        var compactShot=new RenderTargetBitmap(350,180,96,96,PixelFormats.Pbgra32);compactShot.Render(view);
+        compactShot.CopyPixels(new byte[350*180*4],350*4,0);
+        var compactEncoder=new PngBitmapEncoder();compactEncoder.Frames.Add(BitmapFrame.Create(compactShot));
+        using(var file=File.Create("bin/live-focus-image-controls.png"))compactEncoder.Save(file);
+        toggle.IsChecked=true;view.UpdateLayout();
+        check(graphs.Visibility==Visibility.Visible && ((FrameworkElement)view.FindName("PreviewCard")).Visibility==Visibility.Collapsed,
+            "Optional graphs do not restore a duplicate local image");
+        toggle.IsChecked=false;vm.ShowInNinaImage=false;view.UpdateLayout();
         var magnitudeInput=(TextBox)view.FindName("MaximumMagnitudeInput");
         foreach(var size in new[]{(350,500),(350,700),(650,500),(650,700),(950,700)}) {
             int width=size.Item1,height=size.Item2;
@@ -96,6 +110,7 @@ internal static partial class PreviewDisplayChecks {
                 mainOutput.IsChecked=true;
                 check(vm.ShowInNinaImage,"Setup's Image output toggle controls the live mirror");
                 mainOutput.IsChecked=false;
+                view.UpdateLayout();
             }
             check(preview.ActualHeight<fullHeight && preview.ActualHeight>=180 && ((Button)view.FindName("EditRoiButton")).ActualHeight>=28,
                 "Expanded setup leaves a usable image and exposes ROI controls at "+label);
@@ -111,7 +126,7 @@ internal static partial class PreviewDisplayChecks {
             var controlsScroll=(ScrollViewer)view.FindName("ControlsScrollViewer");
             var videoY=video.TranslatePoint(new Point(),view).Y;
             controlsScroll.ScrollToEnd();view.UpdateLayout();
-            check(video.TranslatePoint(new Point(),view).Y==videoY && videoY<30 && setup.TranslatePoint(new Point(),view).Y<110,
+            check(video.TranslatePoint(new Point(),view).Y==videoY && videoY<30 && setup.TranslatePoint(new Point(),view).Y<180,
                 "Only setup scrolls; live controls and fold header remain visible at "+label);
             controlsScroll.ScrollToTop();view.UpdateLayout();
             if(width==650 && height==700) {
@@ -146,14 +161,16 @@ internal static partial class PreviewDisplayChecks {
             "GOTO cancellation stays available while setup is folded");
         setup.IsExpanded=true;view.UpdateLayout();
         var go=(Button)view.FindName("GotoButton");
-        check(go.Command==vm.CancelGotoCommand && Equals(go.Content,"Cancel") && go.ActualWidth==58,"GOTO and cancel share a stable button without shifting the star picker");
+        var slew=(Button)view.FindName("SlewButton");
+        check(go.Command==vm.GotoFocusTargetCommand && Equals(go.Content,"Slew + Center") && slew.Command==vm.SlewFocusTargetCommand && Equals(slew.Content,"Slew"),
+            "Slew and Slew + Center remain distinct buttons while the separate cancellation action is available");
         State("isGoingToFocusTarget",false);
         setup.IsExpanded=false;
         vmType.GetProperty(nameof(vm.IsMoving)).SetValue(vm,true);view.UpdateLayout();
         var halt=(Button)view.FindName("HaltMoveButton");
         check(halt.Visibility==Visibility.Visible && halt.ActualWidth>35 && halt.Command==vm.HaltFocuserCommand,"Motor Stop remains available with setup folded");
         vmType.GetProperty(nameof(vm.IsMoving)).SetValue(vm,false);
-        setup.IsExpanded=true;toggle.IsChecked=true;
+        setup.IsExpanded=true;toggle.IsChecked=true;vm.ShowInNinaImage=true;
         vmType.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,true);view.UpdateLayout();
         System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         view.Dispatcher.Invoke(()=>{},DispatcherPriority.Background);view.UpdateLayout();
@@ -171,8 +188,9 @@ internal static partial class PreviewDisplayChecks {
         var roiEncoder=new PngBitmapEncoder();roiEncoder.Frames.Add(BitmapFrame.Create(roiShot));
         using(var file=File.Create("bin/live-focus-roi.png"))roiEncoder.Save(file);
         vmType.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,false);view.UpdateLayout();
-        check(toggle.IsChecked==true && graphs.Visibility==Visibility.Visible,"Leaving ROI editing restores the user's graph choice");
-        toggle.IsChecked=false;
+        check(toggle.IsChecked==true && graphs.Visibility==Visibility.Visible && ((FrameworkElement)view.FindName("PreviewCard")).Visibility==Visibility.Collapsed,
+            "Leaving ROI editing restores graphs and hides the temporary local editor in Image mode");
+        toggle.IsChecked=false;vm.ShowInNinaImage=false;
         var exposureSlider=(Slider)view.FindName("ExposureSlider");
         vm.PreviewExposureMs=250;view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);
         Slider.IncreaseSmall.Execute(null,exposureSlider);check(vm.PreviewExposureMs==300,"Exposure keyboard step increases by exactly 50 ms");

@@ -77,7 +77,7 @@ internal static class VmChecks {
             _ => Fake.Unexpected(m)
         });
         Task<bool> Slew() {
-            check(owner == vm && vm.IsGoingToFocusTarget && !vm.CanConfigureLive, "Reservation and UI locks cover the initial mount slew");
+            check((owner == vm || !cameraInfo.Connected) && vm.IsGoingToFocusTarget && !vm.CanConfigureLive, "UI locks and an available-camera reservation cover the mount slew");
             check(!vm.MoveINCommand.CanExecute(null) && !vm.StartFocusPreviewCommand.CanExecute(null), "Focus movement and live captures cannot overlap GOTO");
             check(!guiderInfo.Connected || guiderState is "Stopped" or "Looping" or "Selected", "Mount motion starts only after guiding stops or is already idle");
             slews++;
@@ -103,8 +103,16 @@ internal static class VmChecks {
             guiderState = "Stopped";
             return Task.FromResult(true);
         }
-        var dome = Fake.Of<IDomeMediator>((m, a) => m.Name == "GetInfo" ? new DomeInfo { Connected = false } : Fake.Unexpected(m));
-        var follower = Fake.Of<IDomeFollower>((m, a) => Fake.Unexpected(m));
+        var domeInfo = new DomeInfo { Connected = false, CanSetAzimuth = true };
+        bool stopDuringDome = false;
+        var dome = Fake.Of<IDomeMediator>((m, a) => m.Name == "GetInfo" ? domeInfo : Fake.Unexpected(m));
+        var follower = Fake.Of<IDomeFollower>((m, a) => m.Name switch {
+            "get_IsFollowing" => false, "TriggerTelescopeSync" => SyncDome(), _ => Fake.Unexpected(m)
+        });
+        Task<bool> SyncDome() {
+            if (stopDuringDome) vm.CancelGotoCommand.Execute(null);
+            return Task.FromResult(true);
+        }
         var focuser = Fake.Of<IFocuserMediator>((m, a) => m.Name is "RegisterConsumer" or "RemoveConsumer" ? null : Fake.Unexpected(m));
         var wheel = Fake.Of<IFilterWheelMediator>((m, a) => m.Name is "RegisterConsumer" or "RemoveConsumer" ? null : Fake.Unexpected(m));
         var imaging = Fake.Of<IImagingMediator>((m, a) => m.Name is "add_ImagePrepared" or "remove_ImagePrepared" ? null : Fake.Unexpected(m));
@@ -158,6 +166,7 @@ internal static class VmChecks {
             vm.PreviewCenterX = 25; vm.PreviewCenterY = 75;
             var method = typeof(LiveFocusDockableVM).GetMethod("GotoFocusTargetAsync", BindingFlags.NonPublic | BindingFlags.Instance);
             int Goto() => ((Task<int>)method.Invoke(vm, null)).GetAwaiter().GetResult();
+            int SlewOnly() => ((Task<int>)typeof(LiveFocusDockableVM).GetMethod("SlewFocusTargetAsync", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(vm, null)).GetAwaiter().GetResult();
             vm.MaximumFocusMagnitude = 1.9;
             bool magnitudeRejected = false;
             try { Goto(); } catch (InvalidOperationException e) { magnitudeRejected = e.Message.Contains("magnitude"); }
@@ -213,6 +222,22 @@ internal static class VmChecks {
             denyReservation = false; cameraInfo.Connected = false;
             check(!vm.GotoFocusTargetCommand.CanExecute(null) && Goto() == 0, "Disconnected camera disables/guards GOTO");
             check(vm.GotoFocusTargetTooltip.Contains("Connect the camera"), "Disabled GOTO explains the missing plate-solve camera");
+            int beforeSolvers = solvers, beforeCenters = centers, beforeBlocks = blocks;
+            check(vm.SlewFocusTargetCommand.CanExecute(null) && SlewOnly() == 1 && solvers == beforeSolvers && centers == beforeCenters && blocks == beforeBlocks,
+                "Slew works without a camera and never constructs a solver or acquires a missing-camera reservation");
+            check(vm.FocusTargetStatus.Contains("Centering was not requested"), "Slew reports movement completion without claiming verified centering"); Idle();
+            cameraInfo.Connected = true;
+            beforeSolvers = solvers; beforeCenters = centers; beforeBlocks = blocks;
+            check(SlewOnly() == 1 && solvers == beforeSolvers && centers == beforeCenters && blocks == beforeBlocks + 1,
+                "Slew reserves an available camera but performs no imaging or solving"); Idle();
+            stopInSlew = true;
+            check(SlewOnly() == 0 && solvers == beforeSolvers && centers == beforeCenters,
+                "Cancel during Slew terminates motion without ever starting centering"); Idle();
+            stopInSlew = false;
+            domeInfo.Connected = true; stopDuringDome = true;
+            check(SlewOnly() == 0 && !vm.FocusTargetStatus.StartsWith("Slewed to") && centers == beforeCenters,
+                "Cancel during dome synchronization prevents false Slew completion"); Idle();
+            domeInfo.Connected = false; stopDuringDome = false;
             cameraInfo.Connected = true; mountInfo.AtPark = true;
             check(!vm.GotoFocusTargetCommand.CanExecute(null) && vm.GotoFocusTargetTooltip.Contains("Unpark"), "Parked mount stays blocked with actionable tooltip");
             mountInfo.AtPark = false; mountInfo.Slewing = true;

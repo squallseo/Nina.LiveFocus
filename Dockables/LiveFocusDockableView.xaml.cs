@@ -130,36 +130,44 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         private void OnPreviewSizeChanged(object sender, SizeChangedEventArgs e) => DrawRoiOutline();
         private void OnPreviewWorkspaceSizeChanged(object sender, SizeChangedEventArgs e) => UpdatePreviewLayout();
         private void OnMeasurementsChanged(object sender, RoutedEventArgs e) => UpdatePreviewLayout();
-        private (bool Stacked, bool Selecting, bool ShowMeasurements)? previewLayout;
+        private (bool Stacked, bool Selecting, bool ShowMeasurements, bool External)? previewLayout;
         private void UpdatePreviewLayout()
         {
             if (PreviewCard == null || MeasurementsPanel == null || MeasurementsToggle == null || CompactMetric == null) return;
             bool stacked = PreviewWorkspace.ActualWidth < 600;
             bool selecting = DataContext is LiveFocusDockableVM vm && vm.IsSelectingRoi;
+            bool external = !selecting && DataContext is LiveFocusDockableVM output && output.ShowInNinaImage;
             bool showMeasurements = MeasurementsToggle.IsChecked == true;
-            var layout = (stacked, selecting, showMeasurements);
+            var layout = (stacked, selecting, showMeasurements, external);
             if (previewLayout == layout) return;
             previewLayout = layout;
             MeasurementsToggle.Visibility = !selecting ? Visibility.Visible : Visibility.Collapsed;
+            PreviewCard.Visibility = external ? Visibility.Collapsed : Visibility.Visible;
+            PreviewWorkspace.Visibility = external && !showMeasurements ? Visibility.Collapsed : Visibility.Visible;
+            PreviewWorkspace.MinHeight = external ? 0 : 160;
+            PreviewWorkspace.Height = external ? showMeasurements ? 190 : 0 : double.NaN;
+            LayoutRoot.RowDefinitions[1].Height = external ? GridLength.Auto : new GridLength(1, GridUnitType.Star);
             PreviewWorkspace.ColumnDefinitions[0].Width = new GridLength(stacked ? 1 : 3, GridUnitType.Star);
             PreviewWorkspace.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(2, GridUnitType.Star);
-            PreviewWorkspace.RowDefinitions[1].Height = new GridLength(stacked && showMeasurements && !selecting ? 150 : 0);
+            PreviewWorkspace.RowDefinitions[1].Height = new GridLength(!external && stacked && showMeasurements && !selecting ? 150 : 0);
             Grid.SetColumnSpan(PreviewCard, stacked || selecting || !showMeasurements ? 2 : 1);
             Grid.SetRowSpan(PreviewCard, selecting ? 2 : 1);
             PreviewCard.Margin = selecting || !showMeasurements ? new Thickness(0) : stacked ? new Thickness(0, 0, 0, 8) : new Thickness(0, 0, 8, 0);
             MeasurementsPanel.Visibility = selecting || !showMeasurements ? Visibility.Collapsed : Visibility.Visible;
-            Grid.SetRow(MeasurementsPanel, stacked ? 1 : 0);
-            Grid.SetColumn(MeasurementsPanel, stacked ? 0 : 1);
-            Grid.SetColumnSpan(MeasurementsPanel, stacked ? 2 : 1);
-            MeasurementsPanel.ColumnDefinitions[1].Width = stacked ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-            MeasurementsPanel.RowDefinitions[0].Height = new GridLength(stacked ? 1 : 2, GridUnitType.Star);
-            MeasurementsPanel.RowDefinitions[1].Height = stacked ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-            Grid.SetRow(ProfileCard, stacked ? 0 : 1);
-            Grid.SetColumn(ProfileCard, stacked ? 1 : 0);
-            HfrCard.Margin = stacked ? new Thickness(0, 0, 8, 0) : new Thickness(0, 0, 0, 8);
+            Grid.SetRow(MeasurementsPanel, !external && stacked ? 1 : 0);
+            Grid.SetColumn(MeasurementsPanel, external || stacked ? 0 : 1);
+            Grid.SetColumnSpan(MeasurementsPanel, external || stacked ? 2 : 1);
+            bool horizontalGraphs = external || stacked;
+            MeasurementsPanel.ColumnDefinitions[1].Width = horizontalGraphs ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+            MeasurementsPanel.RowDefinitions[0].Height = new GridLength(horizontalGraphs ? 1 : 2, GridUnitType.Star);
+            MeasurementsPanel.RowDefinitions[1].Height = horizontalGraphs ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+            Grid.SetRow(ProfileCard, horizontalGraphs ? 0 : 1);
+            Grid.SetColumn(ProfileCard, horizontalGraphs ? 1 : 0);
+            HfrCard.Margin = horizontalGraphs ? new Thickness(0, 0, 8, 0) : new Thickness(0, 0, 0, 8);
         }
         private void OnRoiPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(LiveFocusDockableVM.ShowInNinaImage)) UpdatePreviewLayout();
             if (e.PropertyName == nameof(LiveFocusDockableVM.IsSelectingRoi))
             {
                 // Editing happens on the image; Retake and Done remain in its header.
