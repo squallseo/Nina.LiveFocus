@@ -49,33 +49,65 @@ internal static partial class PreviewDisplayChecks {
         typeof(LiveFocusDockableVM).GetProperty(nameof(vm.LiveStarProfile)).SetValue(vm,Enumerable.Range(-32,65).Select(x=>new OxyPlot.DataPoint(x,Math.Exp(-x*x/18.0))).ToArray());
         for(int i=0;i<24;i++)vm.LiveHfrPoints.Add(new OxyPlot.DataPoint(i,2.25+2*Math.Exp(-i/5.0)+.08*Math.Sin(i)));
         view.DataContext=null;view.DataContext=vm;
-        foreach(int width in new[]{350,650,950}) {
-            view.Measure(new Size(width,700));view.Arrange(new Rect(0,0,width,700));view.UpdateLayout();
+        var setup=(Expander)view.FindName("SetupExpander");
+        var preview=(FrameworkElement)view.FindName("PreviewSurface");
+        var graphs=(FrameworkElement)view.FindName("MeasurementsPanel");
+        var workspace=(FrameworkElement)view.FindName("PreviewWorkspace");
+        var toggle=(ToggleButton)view.FindName("MeasurementsToggle");
+        var metric=(TextBlock)view.FindName("CompactMetric");
+        check(!setup.IsExpanded && toggle.IsChecked==false,"Occasional setup and graphs start folded");
+        foreach(var size in new[]{(350,500),(350,700),(650,500),(650,700),(950,700)}) {
+            int width=size.Item1,height=size.Item2;
+            string label=$"{width} x {height}";
+            view.Measure(new Size(width,height));view.Arrange(new Rect(0,0,width,height));view.UpdateLayout();
             view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);view.UpdateLayout();
             var video=Children(view).OfType<Button>().Single(b=>AutomationProperties.GetName(b)=="Start live focus");
-            check(video.Visibility==Visibility.Visible && video.ActualWidth==36,"Start video button stays visible while idle at "+width);
-            var step=Children(view).OfType<Button>().Single(b=>Equals(b.Content,"In −"));
-            check(step.Visibility==Visibility.Visible && step.ActualWidth>35,"Focuser direction button is readable at "+width);
-            check(((SolidColorBrush)step.Foreground).Color.A==255,"Focuser button text uses the visible host theme at "+width);
+            check(video.Visibility==Visibility.Visible && video.ActualWidth==36,"Start video button stays visible while idle at "+label);
+            var step=Children(view).OfType<Button>().Single(b=>Equals(b.Content,"In \u2212"));
+            check(step.Visibility==Visibility.Visible && step.ActualWidth>35,"Focuser direction button is readable at "+label);
+            check(((SolidColorBrush)step.Foreground).Color.A==255,"Focuser button text uses the visible host theme at "+label);
             var exposure=Children(view).OfType<Slider>().Single(s=>s.Maximum==5000);
-            check(exposure.ActualWidth>=30 && exposure.SmallChange==50,"Exposure slider fits with 50ms increments at "+width);
+            check(exposure.ActualWidth>=30 && exposure.SmallChange==50,"Exposure slider fits with 50ms increments at "+label);
             var stretch=Children(view).OfType<Slider>().Single(s=>s.Maximum==2.5);
-            check(stretch.ActualWidth>20 && stretch.Value==vm.PreviewStretchStrength,"Image stretch remains accessible at "+width);
-            var bitmap=new RenderTargetBitmap(width,700,96,96,PixelFormats.Pbgra32);bitmap.Render(view);
-            var pixels=new byte[width*700*4];bitmap.CopyPixels(pixels,width*4,0);
-            check(pixels.Where((v,i)=>i%4==3).Count(v=>v>0)>width*100,"Offscreen screenshot actually contains rendered UI at "+width);
+            check(stretch.ActualWidth>20 && stretch.Value==vm.PreviewStretchStrength,"Image stretch remains accessible at "+label);
+            check(preview.ActualHeight>=height-240 && preview.ActualWidth>workspace.ActualWidth*.9 && graphs.Visibility==Visibility.Collapsed && metric.Visibility==Visibility.Visible,
+                "Folded layout maximizes the star image and retains HFR at "+label+$" (image {preview.ActualWidth:F0}x{preview.ActualHeight:F0}, workspace {workspace.ActualWidth:F0}, graphs {graphs.Visibility}, metric {metric.Visibility})");
+            double fullHeight=preview.ActualHeight,fullWidth=preview.ActualWidth;
+            var roi=vm.PreviewRoiRectangle;var selectedStar=vm.SelectedFocusTarget;
+            var bitmap=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);bitmap.Render(view);
+            var pixels=new byte[width*height*4];bitmap.CopyPixels(pixels,width*4,0);
+            check(pixels.Where((v,i)=>i%4==3).Count(v=>v>0)>width*100,"Offscreen screenshot actually contains rendered UI at "+label);
             var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));
-            using var file=File.Create($"bin/live-focus-{width}.png");encoder.Save(file);
-            var preview=(FrameworkElement)view.FindName("PreviewSurface");
-            var graphs=(FrameworkElement)view.FindName("MeasurementsPanel");
-            if(width==350) {
-                check(preview.ActualHeight>=180 && graphs.Visibility==Visibility.Collapsed,"Narrow dock prioritizes a usable star image with inline HFR");
-                var toggle=(ToggleButton)view.FindName("MeasurementsToggle");toggle.IsChecked=true;view.UpdateLayout();
-                check(graphs.Visibility==Visibility.Visible && graphs.TranslatePoint(new Point(),view).Y>=preview.TranslatePoint(new Point(),view).Y+preview.ActualHeight,
-                    "Graphs toggle displays measurements below the narrow image");
-                toggle.IsChecked=false;
-            } else check(graphs.Visibility==Visibility.Visible && graphs.TranslatePoint(new Point(),view).X>preview.TranslatePoint(new Point(),view).X,
-                "Wide dock places measurement plots beside the larger preview at "+width);
+            using(var file=File.Create($"bin/live-focus-{width}-{height}.png"))encoder.Save(file);
+            if(height==700) File.Copy($"bin/live-focus-{width}-{height}.png",$"bin/live-focus-{width}.png",true);
+            toggle.IsChecked=true;view.UpdateLayout();
+            check(graphs.Visibility==Visibility.Visible && (width<616
+                ?graphs.TranslatePoint(new Point(),view).Y>=preview.TranslatePoint(new Point(),view).Y+preview.ActualHeight
+                :graphs.TranslatePoint(new Point(),view).X>preview.TranslatePoint(new Point(),view).X),
+                "Optional graphs appear below narrow images or beside wide images at "+label);
+            toggle.IsChecked=false;setup.IsExpanded=true;view.UpdateLayout();
+            check(preview.ActualHeight<fullHeight && preview.ActualHeight>=180 && ((Button)view.FindName("EditRoiButton")).ActualHeight>=28,
+                "Expanded setup leaves a usable image and exposes ROI controls at "+label);
+            var roiCard=(FrameworkElement)view.FindName("RoiSetupCard");
+            var starCard=(FrameworkElement)view.FindName("StarSetupCard");
+            check(width<616 ? starCard.TranslatePoint(new Point(),view).Y>=roiCard.TranslatePoint(new Point(),view).Y+roiCard.ActualHeight
+                : starCard.TranslatePoint(new Point(),view).X>=roiCard.TranslatePoint(new Point(),view).X+roiCard.ActualWidth,
+                "ROI and star setup cards do not overlap on initial layout or resizing at "+label);
+            var controlsScroll=(ScrollViewer)view.FindName("ControlsScrollViewer");
+            var videoY=video.TranslatePoint(new Point(),view).Y;
+            controlsScroll.ScrollToEnd();view.UpdateLayout();
+            check(video.TranslatePoint(new Point(),view).Y==videoY && videoY<30 && setup.TranslatePoint(new Point(),view).Y<110,
+                "Only setup scrolls; live controls and fold header remain visible at "+label);
+            controlsScroll.ScrollToTop();view.UpdateLayout();
+            if(width==350 && height==500) {
+                var setupShot=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);setupShot.Render(view);
+                setupShot.CopyPixels(new byte[width*height*4],width*4,0);
+                var setupEncoder=new PngBitmapEncoder();setupEncoder.Frames.Add(BitmapFrame.Create(setupShot));
+                using(var file=File.Create("bin/live-focus-setup.png"))setupEncoder.Save(file);
+            }
+            setup.IsExpanded=false;view.UpdateLayout();
+            check(preview.ActualHeight==fullHeight && preview.ActualWidth==fullWidth && vm.PreviewRoiRectangle.Equals(roi) && vm.SelectedFocusTarget==selectedStar && vm.LiveHfrPoints.Count==24,
+                "Folding restores image space without losing ROI, star or measurements at "+label);
         }
         var vmType=typeof(LiveFocusDockableVM);
         void State(string field,object value){vmType.GetField(field,BindingFlags.NonPublic|BindingFlags.Instance).SetValue(vm,value);view.DataContext=null;view.DataContext=vm;view.UpdateLayout();view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);view.UpdateLayout();}
@@ -88,11 +120,25 @@ internal static partial class PreviewDisplayChecks {
         CheckIcon("hourglass");
         State("isStoppingFocusPreview",false);State("assistRunning",false);
         State("isGoingToFocusTarget",true);
+        var cancelGoto=(Button)view.FindName("CancelGotoButton");
+        check(!setup.IsExpanded && cancelGoto.Visibility==Visibility.Visible && cancelGoto.ActualWidth>50 && cancelGoto.Command==vm.CancelGotoCommand,
+            "GOTO cancellation stays available while setup is folded");
+        setup.IsExpanded=true;view.UpdateLayout();
         var go=(Button)view.FindName("GotoButton");
         check(go.Command==vm.CancelGotoCommand && Equals(go.Content,"Cancel") && go.ActualWidth==58,"GOTO and cancel share a stable button without shifting the star picker");
-        State("isGoingToFocusTarget",false);State("isSelectingRoi",true);
+        State("isGoingToFocusTarget",false);
+        setup.IsExpanded=false;
+        vmType.GetProperty(nameof(vm.IsMoving)).SetValue(vm,true);view.UpdateLayout();
+        var halt=(Button)view.FindName("HaltMoveButton");
+        check(halt.Visibility==Visibility.Visible && halt.ActualWidth>35 && halt.Command==vm.HaltFocuserCommand,"Motor Stop remains available with setup folded");
+        vmType.GetProperty(nameof(vm.IsMoving)).SetValue(vm,false);
+        setup.IsExpanded=true;toggle.IsChecked=true;
+        vmType.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,true);view.UpdateLayout();
+        System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+        view.Dispatcher.Invoke(()=>{},DispatcherPriority.Background);view.UpdateLayout();
         var surface=(FrameworkElement)view.FindName("PreviewSurface");
-        var workspace=(FrameworkElement)view.FindName("PreviewWorkspace");
+        check(!setup.IsExpanded && ((Button)view.FindName("ConfirmRoiButton")).IsEnabled && ((Button)view.FindName("ConfirmRoiButton")).ActualWidth>35 && ((Button)view.FindName("RetakeRoiButton")).ActualWidth>35,
+            "ROI editing folds setup and keeps Retake and Done beside the image");
         check(((FrameworkElement)view.FindName("MeasurementsPanel")).Visibility==Visibility.Collapsed && surface.ActualWidth>workspace.ActualWidth*.9,
             "ROI editing uses the full workspace width and hides plots");
         var outline=(System.Windows.Shapes.Rectangle)view.FindName("RoiOutline");
@@ -100,9 +146,12 @@ internal static partial class PreviewDisplayChecks {
         check(outline.Visibility==Visibility.Visible && labels.Length==1 && ((TextBlock)labels[0].Child).FontSize==13 && Canvas.GetTop(labels[0])+labels[0].DesiredSize.Height<=Canvas.GetTop(outline),
             "Yellow ROI is visible with fixed-size text outside its top edge");
         var roiShot=new RenderTargetBitmap(950,700,96,96,PixelFormats.Pbgra32);roiShot.Render(view);
+        roiShot.CopyPixels(new byte[950*700*4],950*4,0);
         var roiEncoder=new PngBitmapEncoder();roiEncoder.Frames.Add(BitmapFrame.Create(roiShot));
         using(var file=File.Create("bin/live-focus-roi.png"))roiEncoder.Save(file);
-        State("isSelectingRoi",false);
+        vmType.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,false);view.UpdateLayout();
+        check(toggle.IsChecked==true && graphs.Visibility==Visibility.Visible,"Leaving ROI editing restores the user's graph choice");
+        toggle.IsChecked=false;
         var exposureSlider=(Slider)view.FindName("ExposureSlider");
         vm.PreviewExposureMs=250;view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);
         Slider.IncreaseSmall.Execute(null,exposureSlider);check(vm.PreviewExposureMs==300,"Exposure keyboard step increases by exactly 50 ms");

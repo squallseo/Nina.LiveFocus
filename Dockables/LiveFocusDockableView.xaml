@@ -132,186 +132,192 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
-    <ScrollViewer x:Name="ControlsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-      <StackPanel>
-        <Border Style="{StaticResource FocusCard}" Padding="10" Margin="0,0,0,8">
-          <StackPanel x:Name="SharedCaptureControls">
-            <Grid Margin="0,0,0,8">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="56" />
-                <ColumnDefinition Width="22" />
-              </Grid.ColumnDefinitions>
-              <Button x:Name="LiveVideoButton" Width="36" Height="32" Padding="5" Margin="0,0,10,0" ToolTipService.ShowOnDisabled="True">
-                <Button.Style>
-                  <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                    <Setter Property="Command" Value="{Binding StartFocusPreviewCommand}" />
-                    <Setter Property="ToolTip" Value="Start live focus" />
-                    <Setter Property="AutomationProperties.Name" Value="Start live focus" />
-                    <Style.Triggers>
-                      <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
-                        <Setter Property="Command" Value="{Binding StopFocusPreviewCommand}" />
-                        <Setter Property="ToolTip" Value="Stop live focus" />
-                        <Setter Property="AutomationProperties.Name" Value="Stop live focus" />
-                      </DataTrigger>
-                      <DataTrigger Binding="{Binding IsStoppingFocusPreview}" Value="True">
-                        <Setter Property="IsEnabled" Value="False" />
-                        <Setter Property="ToolTip" Value="Stopping; waiting for the camera" />
-                        <Setter Property="AutomationProperties.Name" Value="Stopping live focus" />
-                      </DataTrigger>
-                    </Style.Triggers>
-                  </Style>
-                </Button.Style>
-                <Viewbox Width="18" Height="18" Stretch="Uniform">
-                  <Path Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}">
-                    <Path.Style>
-                      <Style TargetType="Path">
-                        <Setter Property="Data" Value="M 1,2 L 13,2 Q 15,2 15,4 L 15,12 Q 15,14 13,14 L 1,14 Q 0,14 0,12 L 0,4 Q 0,2 1,2 Z M 16,5 L 22,2 L 22,14 L 16,11 Z" />
+    <StackPanel>
+      <Border x:Name="EssentialControls" Style="{StaticResource FocusCard}" Padding="8" Margin="0,0,0,4">
+        <StackPanel x:Name="SharedCaptureControls">
+          <Grid Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="56" />
+              <ColumnDefinition Width="22" />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="LiveVideoButton" Width="36" Height="32" Padding="5" Margin="0,0,10,0" ToolTipService.ShowOnDisabled="True">
+              <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
+                  <Setter Property="Command" Value="{Binding StartFocusPreviewCommand}" />
+                  <Setter Property="ToolTip" Value="Start live focus" />
+                  <Setter Property="AutomationProperties.Name" Value="Start live focus" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
+                      <Setter Property="Command" Value="{Binding StopFocusPreviewCommand}" />
+                      <Setter Property="ToolTip" Value="Stop live focus" />
+                      <Setter Property="AutomationProperties.Name" Value="Stop live focus" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsStoppingFocusPreview}" Value="True">
+                      <Setter Property="IsEnabled" Value="False" />
+                      <Setter Property="ToolTip" Value="Stopping; waiting for the camera" />
+                      <Setter Property="AutomationProperties.Name" Value="Stopping live focus" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Button.Style>
+              <Viewbox Width="18" Height="18" Stretch="Uniform">
+                <Path Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}">
+                  <Path.Style>
+                    <Style TargetType="Path">
+                      <Setter Property="Data" Value="M 1,2 L 13,2 Q 15,2 15,4 L 15,12 Q 15,14 13,14 L 1,14 Q 0,14 0,12 L 0,4 Q 0,2 1,2 Z M 16,5 L 22,2 L 22,14 L 16,11 Z" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
+                          <Setter Property="Data" Value="{StaticResource CancelSVG}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsStoppingFocusPreview}" Value="True">
+                          <Setter Property="Data" Value="{StaticResource HourglassSVG}" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Path.Style>
+                </Path>
+              </Viewbox>
+            </Button>
+            <TextBlock Grid.Column="1" Text="Exposure" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource SecondaryBrush}" />
+            <Slider x:Name="ExposureSlider" Grid.Column="2" Minimum="1" Maximum="5000" SmallChange="50" LargeChange="50" TickFrequency="50" IsSnapToTickEnabled="True" Value="{Binding PreviewExposureMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanConfigureLive}" VerticalAlignment="Center" Margin="0,0,10,0" AutomationProperties.Name="Exposure milliseconds" Ticks="1,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1050,1100,1150,1200,1250,1300,1350,1400,1450,1500,1550,1600,1650,1700,1750,1800,1850,1900,1950,2000,2050,2100,2150,2200,2250,2300,2350,2400,2450,2500,2550,2600,2650,2700,2750,2800,2850,2900,2950,3000,3050,3100,3150,3200,3250,3300,3350,3400,3450,3500,3550,3600,3650,3700,3750,3800,3850,3900,3950,4000,4050,4100,4150,4200,4250,4300,4350,4400,4450,4500,4550,4600,4650,4700,4750,4800,4850,4900,4950,5000" />
+            <TextBox Grid.Column="3" Text="{Binding PreviewExposureMs, StringFormat=F0, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanConfigureLive}" AutomationProperties.Name="Exposure milliseconds" TextAlignment="Right" />
+            <TextBlock Grid.Column="4" Text="ms" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
+          </Grid>
+          <WrapPanel>
+            <TextBlock Text="Step" Width="30" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
+            <TextBox Text="{Binding UserStep, UpdateSourceTrigger=LostFocus}" Width="60" Margin="0,0,8,0" AutomationProperties.Name="Focuser step size" />
+            <Button Content="In −" Margin="0,0,6,0" MinWidth="49" ToolTip="Move inward by the step size. Native streaming continues during movement.">
+              <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
+                  <Setter Property="Command" Value="{Binding MoveINCommand}" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
+                      <Setter Property="Command" Value="{Binding PreviewMoveInCommand}" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Button.Style>
+            </Button>
+            <Button Content="Out +" MinWidth="49" ToolTip="Move outward by the step size. Native streaming continues during movement.">
+              <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
+                  <Setter Property="Command" Value="{Binding MoveOUTCommand}" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
+                      <Setter Property="Command" Value="{Binding PreviewMoveOutCommand}" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Button.Style>
+            </Button>
+            <TextBlock Text="{Binding FocuserInfo.Position, StringFormat='Pos {0}', FallbackValue='Pos —', TargetNullValue='Pos —'}" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" Margin="10,0,8,0" ToolTip="Current focuser position." />
+            <Button x:Name="HaltMoveButton" Content="Stop" Command="{Binding HaltFocuserCommand}" Style="{StaticResource FocusButton}" Visibility="{Binding IsMoving, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Cancel the current focuser move." />
+            <Button x:Name="CancelGotoButton" Content="Cancel GOTO" Command="{Binding CancelGotoCommand}" Style="{StaticResource FocusButton}" Margin="6,0,0,0" Visibility="{Binding IsGoingToFocusTarget, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Cancel the slew or plate-solve centering, even with setup folded." />
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+      <Expander x:Name="SetupExpander" IsExpanded="False" Margin="2,0,2,4" ToolTip="Choose the star area, slew to a focus star or set an absolute focuser position. Fold this after setup to enlarge the image.">
+        <Expander.Header>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Setup" FontWeight="SemiBold" />
+            <TextBlock Text="ROI · GOTO · Position" FontSize="11" Foreground="{StaticResource SecondaryBrush}" Margin="10,0,0,0" VerticalAlignment="Center" />
+          </StackPanel>
+        </Expander.Header>
+        <ScrollViewer x:Name="ControlsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <local:FocusCardsPanel Margin="0,6,0,0">
+            <Border x:Name="RoiSetupCard" Style="{StaticResource FocusCard}">
+              <StackPanel>
+                <TextBlock Text="Star area" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <WrapPanel>
+                  <Button x:Name="EditRoiButton" Margin="0,0,8,0">
+                    <Button.Style>
+                      <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
+                        <Setter Property="Content" Value="Edit ROI" />
+                        <Setter Property="Command" Value="{Binding SelectRoiCommand}" />
+                        <Setter Property="ToolTip" Value="Open the full image. Click a star, move the yellow box or drag its edges to resize." />
                         <Style.Triggers>
-                          <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
-                            <Setter Property="Data" Value="{StaticResource CancelSVG}" />
-                          </DataTrigger>
-                          <DataTrigger Binding="{Binding IsStoppingFocusPreview}" Value="True">
-                            <Setter Property="Data" Value="{StaticResource HourglassSVG}" />
+                          <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
+                            <Setter Property="Content" Value="Retake" />
+                            <Setter Property="Command" Value="{Binding RefreshRoiImageCommand}" />
+                            <Setter Property="ToolTip" Value="Replace the full image with a new exposure." />
                           </DataTrigger>
                         </Style.Triggers>
                       </Style>
-                    </Path.Style>
-                  </Path>
-                </Viewbox>
-              </Button>
-              <TextBlock Grid.Column="1" Text="Exposure" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource SecondaryBrush}" />
-              <Slider x:Name="ExposureSlider" Grid.Column="2" Minimum="1" Maximum="5000" SmallChange="50" LargeChange="50" TickFrequency="50" IsSnapToTickEnabled="True" Value="{Binding PreviewExposureMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanConfigureLive}" VerticalAlignment="Center" Margin="0,0,10,0" AutomationProperties.Name="Exposure milliseconds" Ticks="1,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1050,1100,1150,1200,1250,1300,1350,1400,1450,1500,1550,1600,1650,1700,1750,1800,1850,1900,1950,2000,2050,2100,2150,2200,2250,2300,2350,2400,2450,2500,2550,2600,2650,2700,2750,2800,2850,2900,2950,3000,3050,3100,3150,3200,3250,3300,3350,3400,3450,3500,3550,3600,3650,3700,3750,3800,3850,3900,3950,4000,4050,4100,4150,4200,4250,4300,4350,4400,4450,4500,4550,4600,4650,4700,4750,4800,4850,4900,4950,5000" />
-              <TextBox Grid.Column="3" Text="{Binding PreviewExposureMs, StringFormat=F0, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanConfigureLive}" AutomationProperties.Name="Exposure milliseconds" TextAlignment="Right" />
-              <TextBlock Grid.Column="4" Text="ms" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
-            </Grid>
-            <WrapPanel>
-              <Button x:Name="EditRoiButton" Margin="0,0,8,0">
-                <Button.Style>
-                  <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                    <Setter Property="Content" Value="Edit ROI" />
-                    <Setter Property="Command" Value="{Binding SelectRoiCommand}" />
-                    <Setter Property="ToolTip" Value="Open the full image. Click a star, move the yellow box or drag its edges to resize." />
-                    <Style.Triggers>
-                      <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                        <Setter Property="Content" Value="Retake" />
-                        <Setter Property="Command" Value="{Binding RefreshRoiImageCommand}" />
-                        <Setter Property="ToolTip" Value="Replace the full image with a new exposure." />
-                      </DataTrigger>
-                    </Style.Triggers>
-                  </Style>
-                </Button.Style>
-              </Button>
-              <Button Content="Auto ROI" Command="{Binding AutoRoiCommand}" Style="{StaticResource FocusButton}" Margin="0,0,8,0" ToolTip="Find a star near the selected area and size its box. With Bahtinov overlay enabled, include the mask pattern. Stop preview before selecting." />
-              <ComboBox Width="88" SelectedValuePath="Tag" SelectedValue="{Binding PreviewRoiPreset, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" MinHeight="28" Margin="0,0,8,0" ToolTip="ROI preset. For a custom size, drag the edges of the yellow box." AutomationProperties.Name="ROI size preset">
-                <ComboBoxItem Content="256 px" Tag="256" />
-                <ComboBoxItem Content="512 px" Tag="512" />
-                <ComboBoxItem Content="1024 px" Tag="1024" />
-                <ComboBoxItem Content="Custom" Tag="Custom" />
-              </ComboBox>
-              <Button x:Name="ConfirmRoiButton" Content="Done" Command="{Binding ConfirmRoiCommand}" Style="{StaticResource FocusButton}" Visibility="{Binding IsSelectingRoi, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Keep this star area and return to live preview." />
-            </WrapPanel>
-          </StackPanel>
-        </Border>
-        <local:FocusCardsPanel>
-          <Border Style="{StaticResource FocusCard}" Padding="10">
-            <StackPanel>
-              <DockPanel Margin="0,0,0,8">
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                  <TextBlock Text="Position" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                  <TextBlock Text="{Binding FocuserInfo.Position, FallbackValue=—, TargetNullValue=—}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
-                </StackPanel>
-                <TextBlock Text="Focuser" FontWeight="SemiBold" FontSize="13" />
-              </DockPanel>
-              <WrapPanel Margin="0,0,0,6">
-                <TextBlock Text="Target" Width="40" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
-                <TextBox Text="{Binding TargetPosition, UpdateSourceTrigger=LostFocus}" Width="68" Margin="0,0,8,0" AutomationProperties.Name="Target focuser position" ToolTip="Absolute focuser position." />
-                <Button Content="Move" Command="{Binding MoveToPositionCommand}" Style="{StaticResource FocusButton}" Margin="0,0,6,0" />
-                <Button Content="Stop" Command="{Binding HaltFocuserCommand}" Style="{StaticResource FocusButton}" Visibility="{Binding IsMoving, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Cancel the current focuser move." />
-              </WrapPanel>
-              <WrapPanel>
-                <TextBlock Text="Step" Width="40" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
-                <TextBox Text="{Binding UserStep, UpdateSourceTrigger=LostFocus}" Width="68" Margin="0,0,8,0" AutomationProperties.Name="Focuser step size" />
-                <Button Content="In −" Margin="0,0,6,0" MinWidth="49" ToolTip="Move inward by the step size. Native streaming continues during movement.">
-                  <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                      <Setter Property="Command" Value="{Binding MoveINCommand}" />
-                      <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
-                          <Setter Property="Command" Value="{Binding PreviewMoveInCommand}" />
-                        </DataTrigger>
-                      </Style.Triggers>
-                    </Style>
-                  </Button.Style>
-                </Button>
-                <Button Content="Out +" MinWidth="49" ToolTip="Move outward by the step size. Native streaming continues during movement.">
-                  <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                      <Setter Property="Command" Value="{Binding MoveOUTCommand}" />
-                      <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
-                          <Setter Property="Command" Value="{Binding PreviewMoveOutCommand}" />
-                        </DataTrigger>
-                      </Style.Triggers>
-                    </Style>
-                  </Button.Style>
-                </Button>
-              </WrapPanel>
-            </StackPanel>
-          </Border>
-          <Border Grid.Row="1" Style="{StaticResource FocusCard}" Padding="10">
-            <StackPanel>
-              <DockPanel Margin="0,0,0,8">
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                  <TextBlock Text="Alt ≥" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                  <TextBox Width="38" MinHeight="26" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Minimum star altitude" ToolTip="Minimum altitude in degrees. Refresh after changing." />
-                  <TextBlock Text="°" VerticalAlignment="Center" Margin="3,0,0,0" />
-                </StackPanel>
-                <TextBlock Text="Focus star" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
-              </DockPanel>
-              <Grid Margin="0,0,0,6">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <ComboBox x:Name="FocusStarPicker" MinHeight="28" ItemsSource="{Binding FocusTargets}" SelectedItem="{Binding SelectedFocusTarget}" MaxDropDownHeight="240" AutomationProperties.Name="Focus star" ToolTip="Stars above the minimum altitude and your profile horizon.">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                      <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" FontSize="11" />
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
-                <Button Grid.Column="1" Width="28" Padding="5" Style="{StaticResource FocusButton}" Command="{Binding RefreshFocusTargetsCommand}" Margin="6,0,0,0" ToolTip="Refresh visible focus stars using the current time and profile location." AutomationProperties.Name="Refresh focus stars">
-                  <Viewbox Width="14" Height="14">
-                    <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 16,2 L 16,7 L 11,7 L 13,5 A 6,6 0 1 0 14,11 L 16,11 A 8,8 0 1 1 14.5,3.5 Z" />
-                  </Viewbox>
-                </Button>
-                <Button x:Name="GotoButton" Grid.Column="2" Width="58" Margin="6,0,0,0" ToolTipService.ShowOnDisabled="True">
-                  <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                      <Setter Property="Content" Value="GOTO" />
-                      <Setter Property="Command" Value="{Binding GotoFocusTargetCommand}" />
-                      <Setter Property="ToolTip" Value="{Binding GotoFocusTargetTooltip}" />
-                      <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsGoingToFocusTarget}" Value="True">
-                          <Setter Property="Content" Value="Cancel" />
-                          <Setter Property="Command" Value="{Binding CancelGotoCommand}" />
-                          <Setter Property="ToolTip" Value="Cancel the slew or plate-solve centering." />
-                        </DataTrigger>
-                      </Style.Triggers>
-                    </Style>
-                  </Button.Style>
-                </Button>
-              </Grid>
-              <TextBlock Text="{Binding FocusTargetStatus}" TextTrimming="CharacterEllipsis" ToolTip="{Binding FocusTargetStatus}" Foreground="{StaticResource SecondaryBrush}" FontSize="11" MinHeight="18" />
-            </StackPanel>
-          </Border>
-        </local:FocusCardsPanel>
-      </StackPanel>
-    </ScrollViewer>
+                    </Button.Style>
+                  </Button>
+                  <Button Content="Auto ROI" Command="{Binding AutoRoiCommand}" Style="{StaticResource FocusButton}" Margin="0,0,8,0" ToolTip="Find a star near the selected area and size its box. With Bahtinov overlay enabled, include the mask pattern. Stop preview before selecting." />
+                  <ComboBox Width="88" SelectedValuePath="Tag" SelectedValue="{Binding PreviewRoiPreset, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" MinHeight="28" Margin="0,0,8,0" ToolTip="ROI preset. For a custom size, drag the edges of the yellow box." AutomationProperties.Name="ROI size preset">
+                    <ComboBoxItem Content="256 px" Tag="256" />
+                    <ComboBoxItem Content="512 px" Tag="512" />
+                    <ComboBoxItem Content="1024 px" Tag="1024" />
+                    <ComboBoxItem Content="Custom" Tag="Custom" />
+                  </ComboBox>
+
+                </WrapPanel>
+                <ToggleButton Content="Bahtinov overlay" IsChecked="{Binding AnalyzeBahtinov, Mode=TwoWay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip="Draw the detected diffraction lines for manual focusing with a Bahtinov mask. Remove the mask before plate solving." />
+                <TextBlock Text="Absolute position" FontWeight="SemiBold" Margin="0,10,0,6" />
+                <WrapPanel Margin="0,0,0,6">
+                  <TextBlock Text="Target" Width="40" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
+                  <TextBox Text="{Binding TargetPosition, UpdateSourceTrigger=LostFocus}" Width="68" Margin="0,0,8,0" AutomationProperties.Name="Target focuser position" ToolTip="Absolute focuser position." />
+                  <Button Content="Move" Command="{Binding MoveToPositionCommand}" Style="{StaticResource FocusButton}" Margin="0,0,6,0" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+            <Border x:Name="StarSetupCard" Grid.Row="1" Style="{StaticResource FocusCard}" Padding="10">
+              <StackPanel>
+                <DockPanel Margin="0,0,0,8">
+                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBlock Text="Alt ≥" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <TextBox Width="38" MinHeight="26" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Minimum star altitude" ToolTip="Minimum altitude in degrees. Refresh after changing." />
+                    <TextBlock Text="°" VerticalAlignment="Center" Margin="3,0,0,0" />
+                  </StackPanel>
+                  <TextBlock Text="Focus star" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+                <Grid Margin="0,0,0,6">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <ComboBox x:Name="FocusStarPicker" MinHeight="28" ItemsSource="{Binding FocusTargets}" SelectedItem="{Binding SelectedFocusTarget}" MaxDropDownHeight="240" AutomationProperties.Name="Focus star" ToolTip="Stars above the minimum altitude and your profile horizon.">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" FontSize="11" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Grid.Column="1" Width="28" Padding="5" Style="{StaticResource FocusButton}" Command="{Binding RefreshFocusTargetsCommand}" Margin="6,0,0,0" ToolTip="Refresh visible focus stars using the current time and profile location." AutomationProperties.Name="Refresh focus stars">
+                    <Viewbox Width="14" Height="14">
+                      <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 16,2 L 16,7 L 11,7 L 13,5 A 6,6 0 1 0 14,11 L 16,11 A 8,8 0 1 1 14.5,3.5 Z" />
+                    </Viewbox>
+                  </Button>
+                  <Button x:Name="GotoButton" Grid.Column="2" Width="58" Margin="6,0,0,0" ToolTipService.ShowOnDisabled="True">
+                    <Button.Style>
+                      <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
+                        <Setter Property="Content" Value="GOTO" />
+                        <Setter Property="Command" Value="{Binding GotoFocusTargetCommand}" />
+                        <Setter Property="ToolTip" Value="{Binding GotoFocusTargetTooltip}" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsGoingToFocusTarget}" Value="True">
+                            <Setter Property="Content" Value="Cancel" />
+                            <Setter Property="Command" Value="{Binding CancelGotoCommand}" />
+                            <Setter Property="ToolTip" Value="Cancel the slew or plate-solve centering." />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Button.Style>
+                  </Button>
+                </Grid>
+                <TextBlock Text="{Binding FocusTargetStatus}" TextTrimming="CharacterEllipsis" ToolTip="{Binding FocusTargetStatus}" Foreground="{StaticResource SecondaryBrush}" FontSize="11" MinHeight="18" />
+              </StackPanel>
+            </Border>
+          </local:FocusCardsPanel>
+        </ScrollViewer>
+      </Expander>
+    </StackPanel>
     <Grid x:Name="PreviewWorkspace" Grid.Row="1" MinHeight="160" Margin="0,2,0,0" SizeChanged="OnPreviewWorkspaceSizeChanged">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="3*" />
@@ -330,21 +336,24 @@
           </Grid.RowDefinitions>
           <StackPanel Margin="0,0,0,6">
           <DockPanel>
-            <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Graphs" Style="{StaticResource FocusSwitch}" IsChecked="False" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show HFR history and the star profile below the image."/>
-          <TextBlock FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Visibility="{Binding IsSelectingRoi, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
+              <Button x:Name="RetakeRoiButton" Content="Retake" Command="{Binding RefreshRoiImageCommand}" Style="{StaticResource FocusButton}" Margin="6,0,6,0" ToolTip="Replace the full image with a new exposure." />
+              <Button x:Name="ConfirmRoiButton" Content="Done" Command="{Binding ConfirmRoiCommand}" Style="{StaticResource FocusButton}" ToolTip="Keep this star area and return to live preview." />
+            </StackPanel>
+            <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Graphs" Style="{StaticResource FocusSwitch}" IsChecked="False" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show HFR history and the star profile; hide them to enlarge the image."/>
+          <TextBlock x:Name="CompactMetric" FontWeight="SemiBold" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center">
             <TextBlock.Style>
               <Style TargetType="TextBlock">
-                <Setter Property="Text" Value="Star preview" />
+                <Setter Property="Text" Value="{Binding LiveHfrText}" />
                 <Style.Triggers>
                   <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                    <Setter Property="Text" Value="Move the yellow box or drag its edges, then Done." />
+                    <Setter Property="Text" Value="ROI · drag to move / resize" />
                   </DataTrigger>
                 </Style.Triggers>
               </Style>
             </TextBlock.Style>
           </TextBlock>
           </DockPanel>
-          <TextBlock x:Name="CompactMetric" Text="{Binding LiveHfrText}" FontSize="11" Foreground="{StaticResource SecondaryBrush}" Margin="0,4,0,0"/>
           </StackPanel>
           <Grid x:Name="PreviewSurface" Grid.Row="1" Background="#101214" MouseLeftButtonDown="OnPreviewDown" MouseMove="OnPreviewMove" MouseLeftButtonUp="OnPreviewUp" LostMouseCapture="OnPreviewCaptureLost" SizeChanged="OnPreviewSizeChanged">
             <Image x:Name="PreviewImage" Source="{Binding LiveDisplayImage}" SizeChanged="OnPreviewSizeChanged" Stretch="Uniform" ToolTip="{Binding RoiLocationText}">
@@ -359,7 +368,7 @@
                 </Style>
               </Image.Style>
             </Image>
-            <TextBlock Text="Select a star area, then press the video button." TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="240" Margin="12" Foreground="{StaticResource SecondaryBrush}">
+            <TextBlock Text="Open Setup to choose a star area, then press the video button." TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="240" Margin="12" Foreground="{StaticResource SecondaryBrush}">
               <TextBlock.Style>
                 <Style TargetType="TextBlock">
                   <Setter Property="Visibility" Value="Collapsed" />
@@ -397,7 +406,6 @@
                 </Viewbox>
               </Button>
             </Grid>
-            <ToggleButton Content="Bahtinov overlay" IsChecked="{Binding AnalyzeBahtinov, Mode=TwoWay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,7,0,0" ToolTip="Draw the detected diffraction lines for manual focusing with a Bahtinov mask. Remove the mask before plate solving." />
           </StackPanel>
         </Grid>
       </Border>

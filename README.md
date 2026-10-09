@@ -6,7 +6,11 @@ A NINA plugin for moving the focuser while watching a live star image.
 
 ![Live Focus layout](docs/live-focus-ui.png)
 
-Example layout rendered with synthetic test data. In a narrow dock, the image fills the width; use **Graphs** to show measurements below it. Wider docks show the preview and plots side by side.
+Example layout rendered with synthetic test data. Exposure, In / Out steps and the current position stay visible. **Setup** starts folded and contains ROI, star GOTO, absolute position and Bahtinov overlay controls. Only its contents scroll, leaving live controls accessible on short docks.
+
+**Graphs** starts off to give the image the full workspace width while keeping the local HFR value visible. Turn it on to show measurements below a narrow image or beside a wide one. ROI editing folds Setup and puts **Retake / Done** beside the image; finishing restores your graph choice.
+
+[Small-screen example (350 × 500)](docs/live-focus-compact.png)
 
 ## Features
 
@@ -16,7 +20,7 @@ Example layout rendered with synthetic test data. In a narrow dock, the image fi
 - Live ROI preview, local HFR history and the star intensity profile. On streaming cameras, preview continues during focuser movement.
 - Mouse ROI selection: click a star, drag the box to move it, or drag an edge/corner to resize. Its size is shown outside the yellow box.
 - An explicit **Auto ROI** button; starting live preview preserves the chosen ROI.
-- Exposure slider in 50 ms increments, optional Bahtinov mask overlay and an image-footer stretch slider. Stretch changes only the display, never raw measurements.
+- Exposure slider in 50 ms increments, optional Bahtinov mask overlay in Setup and an image-footer stretch slider. Stretch changes only the display, never raw measurements.
 - Optional diagnostic FITS/JSON recording and detailed timing logs. Recording is **off by default**; normal errors and warnings are still logged.
 
 Autofocus, curve fitting, spike autofocus, sequencer instructions and lens configuration are outside this plugin's scope. Use NINA's autofocus or the original Manual Focuser plugin for those features. The Bahtinov overlay is a manual focusing aid.
@@ -56,9 +60,9 @@ NINA supplies its own libraries; do not copy every dependency from the build dir
 
 ## Using it
 
-1. Connect the camera and focuser. Optionally choose a focus star and use GOTO. Remove a Bahtinov mask for plate solving.
-2. Choose **Edit ROI** to edit the full image, then **Done**, or use **Auto ROI** near the target star.
-3. Set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR.
+1. Connect the camera and focuser. Open **Setup** to optionally choose a focus star and use GOTO. Remove a Bahtinov mask for plate solving.
+2. In Setup, choose **Edit ROI** to edit the full image, then **Done**, or use **Auto ROI** near the target star. Enable Bahtinov overlay here when using a mask.
+3. Fold Setup, set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR. Turn on Graphs when needed. Movement Stop and GOTO cancellation remain available with Setup folded.
 4. Adjust Stretch if the preview is too bright. Stop preview before changing exposure or ROI.
 
 Streaming and diagnostics settings are in NINA's plugin options. Diagnostics, when enabled before an operation, are saved under `%LOCALAPPDATA%\NINA\LiveFocus\FocusDiagnostics`. Turning recording off stops further records; existing records remain available.
@@ -79,7 +83,7 @@ dotnet run --project Tools/RoiInteractionChecks -c Release
 dotnet run --project Tools/FocusChecks -c Release
 ```
 
-The UI harness renders the actual dockable at narrow and wide sizes without opening NINA. These checks verify workflow, cleanup and rendering; physical camera throughput and optical performance still need field testing.
+The UI harness renders the actual dockable at sizes from 350 × 500 to 950 × 700 without opening NINA, checking folding, resizing and active-operation controls. These checks verify workflow, cleanup and rendering; physical camera throughput and optical performance still need field testing.
 
 ## Origin and license
 

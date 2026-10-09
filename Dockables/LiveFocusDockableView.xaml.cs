@@ -24,13 +24,14 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public LiveFocusDockableView()
         {
             InitializeComponent();
-            // Scroll only the controls when the dock is short; keep the chart in
-            // a finite star-sized row so it can fill a larger dock.
-            LayoutRoot.SizeChanged += (_, _) => ControlsScrollViewer.MaxHeight = Math.Max(96,
-                LayoutRoot.ActualHeight - Math.Min(320, LayoutRoot.ActualHeight * .62));
+            // Only occasional setup scrolls; live controls and the fold header stay visible.
+            LayoutRoot.SizeChanged += (_, _) => UpdateSetupHeight();
+            EssentialControls.SizeChanged += (_, _) => UpdateSetupHeight();
             Loaded += OnLoaded;
             DataContextChanged += OnDataContextChanged;
         }
+        private void UpdateSetupHeight() => ControlsScrollViewer.MaxHeight = Math.Max(64,
+            LayoutRoot.ActualHeight - EssentialControls.ActualHeight - 32 - Math.Min(320, LayoutRoot.ActualHeight * .62));
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             if (DataContext is LiveFocusDockableVM vm) await vm.EnsureFocusTargetsLoadedAsync();
@@ -135,18 +136,17 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             if (PreviewCard == null || MeasurementsPanel == null || MeasurementsToggle == null || CompactMetric == null) return;
             bool stacked = PreviewWorkspace.ActualWidth < 600;
             bool selecting = DataContext is LiveFocusDockableVM vm && vm.IsSelectingRoi;
-            bool showMeasurements = !stacked || MeasurementsToggle.IsChecked == true;
+            bool showMeasurements = MeasurementsToggle.IsChecked == true;
             var layout = (stacked, selecting, showMeasurements);
             if (previewLayout == layout) return;
             previewLayout = layout;
-            MeasurementsToggle.Visibility = stacked && !selecting ? Visibility.Visible : Visibility.Collapsed;
-            CompactMetric.Visibility = stacked && !showMeasurements && !selecting ? Visibility.Visible : Visibility.Collapsed;
+            MeasurementsToggle.Visibility = !selecting ? Visibility.Visible : Visibility.Collapsed;
             PreviewWorkspace.ColumnDefinitions[0].Width = new GridLength(stacked ? 1 : 3, GridUnitType.Star);
             PreviewWorkspace.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(2, GridUnitType.Star);
             PreviewWorkspace.RowDefinitions[1].Height = new GridLength(stacked && showMeasurements && !selecting ? 150 : 0);
-            Grid.SetColumnSpan(PreviewCard, stacked || selecting ? 2 : 1);
+            Grid.SetColumnSpan(PreviewCard, stacked || selecting || !showMeasurements ? 2 : 1);
             Grid.SetRowSpan(PreviewCard, selecting ? 2 : 1);
-            PreviewCard.Margin = selecting ? new Thickness(0) : stacked ? new Thickness(0, 0, 0, 8) : new Thickness(0, 0, 8, 0);
+            PreviewCard.Margin = selecting || !showMeasurements ? new Thickness(0) : stacked ? new Thickness(0, 0, 0, 8) : new Thickness(0, 0, 8, 0);
             MeasurementsPanel.Visibility = selecting || !showMeasurements ? Visibility.Collapsed : Visibility.Visible;
             Grid.SetRow(MeasurementsPanel, stacked ? 1 : 0);
             Grid.SetColumn(MeasurementsPanel, stacked ? 0 : 1);
@@ -160,7 +160,12 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         }
         private void OnRoiPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(LiveFocusDockableVM.IsSelectingRoi)) UpdatePreviewLayout();
+            if (e.PropertyName == nameof(LiveFocusDockableVM.IsSelectingRoi))
+            {
+                // Editing happens on the image; Retake and Done remain in its header.
+                if (DataContext is LiveFocusDockableVM vm && vm.IsSelectingRoi) SetupExpander.IsExpanded = false;
+                UpdatePreviewLayout();
+            }
             if (e.PropertyName is "PreviewRoiRectangle" or "IsSelectingRoi" or "LiveDisplayImage") DrawRoiOutline();
         }
         private void DrawRoiOutline()
