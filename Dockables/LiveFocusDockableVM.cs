@@ -50,6 +50,9 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         private string lastGotoUnavailableReason;
         public FocuserInfo FocuserInfo { get; private set; }
         public CameraInfo CameraInfo { get; private set; }
+        public bool IsCameraConnected => CameraInfo?.Connected == true;
+        public string CameraConnectionText => IsCameraConnected ? "Connected" : "Disconnected";
+        public string LiveFrameDetails { get; private set; } = "Camera connection. Frame timing will appear after starting live focus.";
         public TelescopeInfo TelescopeInfo { get; private set; }
         public FilterWheelInfo FilterwheelInfo { get; private set; }
         public GuiderInfo GuiderInfo { get; private set; }
@@ -131,7 +134,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             if (dispatcher == null || dispatcher.CheckAccess()) action(); else dispatcher.BeginInvoke(action);
         }
         public void UpdateDeviceInfo(FocuserInfo info) { if (info == null) return; ApplyOnUiThread(() => { FocuserInfo = info; RaisePropertyChanged(nameof(FocuserInfo)); if (info.Connected != lastFocuserConnected) { lastFocuserConnected = info.Connected; CommandManager.InvalidateRequerySuggested(); } }); }
-        public void UpdateDeviceInfo(CameraInfo info) { if (info == null) return; ApplyOnUiThread(() => { CameraInfo = info; RaisePropertyChanged(nameof(CameraInfo)); RaisePropertyChanged(nameof(PreviewRoiRectangle)); RaisePropertyChanged(nameof(CanUseFocusStreaming)); RefreshGotoAvailability(); }); }
+        public void UpdateDeviceInfo(CameraInfo info) { if (info == null) return; ApplyOnUiThread(() => { CameraInfo = info; RaisePropertyChanged(nameof(CameraInfo)); RaisePropertyChanged(nameof(IsCameraConnected)); RaisePropertyChanged(nameof(CameraConnectionText)); RaisePropertyChanged(nameof(PreviewRoiRectangle)); RaisePropertyChanged(nameof(CanUseFocusStreaming)); RefreshGotoAvailability(); }); }
         public void UpdateDeviceInfo(TelescopeInfo info) { if (info == null) return; ApplyOnUiThread(() => { TelescopeInfo = info; RaisePropertyChanged(nameof(TelescopeInfo)); RefreshGotoAvailability(); }); }
         public void UpdateDeviceInfo(FilterWheelInfo info) { if (info == null) return; ApplyOnUiThread(() => { FilterwheelInfo = info; RaisePropertyChanged(nameof(FilterwheelInfo)); }); }
         public void UpdateDeviceInfo(GuiderInfo info) { if (info == null) return; ApplyOnUiThread(() => { GuiderInfo = info; RaisePropertyChanged(nameof(GuiderInfo)); RefreshGotoAvailability(); }); }

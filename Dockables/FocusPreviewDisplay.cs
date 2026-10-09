@@ -15,7 +15,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
     {
         // The frozen image retains its own raw preview for display adjustments.
         // Weak keys release that buffer when a frame is replaced; no image history.
-        private sealed record PreviewPixels(double[] Pixels, int Width, int Height, BahtinovMeasurement Overlay, double Strength, BitmapSource Bitmap);
+        private sealed record PreviewPixels(double[] Pixels, int Width, int Height, BahtinovMeasurement Overlay, double Strength, BitmapSource Bitmap, FocusRawFrame Raw = null);
         private readonly ConditionalWeakTable<ImageSource, PreviewPixels> previewPixels = new();
         private double previewStretchStrength = 1;
         private CancellationTokenSource stretchRefresh;
@@ -51,7 +51,9 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                     if (source == null || !previewPixels.TryGetValue(source, out var raw)) return source;
                     if (raw.Strength == strength) return source;
                     await stretchRenderGate.WaitAsync(cancellation.Token);
-                    try { return await Task.Run(() => RenderFocusPreview(raw.Pixels, raw.Width, raw.Height, raw.Overlay, strength), cancellation.Token); }
+                    try { return await Task.Run(() => raw.Raw != null
+                        ? RenderRawFocusPreview(raw.Raw, raw.Overlay, strength)
+                        : RenderFocusPreview(raw.Pixels, raw.Width, raw.Height, raw.Overlay, strength), cancellation.Token); }
                     finally { stretchRenderGate.Release(); }
                 }
                 var newFocus = await Render(focus);

@@ -15,11 +15,13 @@ namespace Cwseo.NINA.LiveFocus.Models
 {
     public partial class LiveFocusModel
     {
+        // retainRawPixels supplies RawFrame instead of Pixels. The default keeps
+        // the double-array contract for other consumers and existing checks.
         public sealed record StreamPreviewFrame(double[] Pixels, int Width, int Height, bool HardwareRoi, PreviewTiming Timing,
             long AcquisitionStarted = 0, long AvailableAt = 0, int BitDepth = 16, bool? IsBayered = null,
-            int? FocuserPosition = null, double ExposureSeconds = double.NaN);
+            int? FocuserPosition = null, double ExposureSeconds = double.NaN, FocusRawFrame RawFrame = null);
         public bool SupportsFocusStreaming => FocusCameraSupport.SupportsStreaming(cameraMediator.GetInfo());
-        public LatestFrameStream<StreamPreviewFrame> StartFocusStreaming(double seconds, int roiSize, double centerX, double centerY, CancellationToken token, int? roiHeight = null)
+        public LatestFrameStream<StreamPreviewFrame> StartFocusStreaming(double seconds, int roiSize, double centerX, double centerY, CancellationToken token, int? roiHeight = null, bool retainRawPixels = false)
         {
             token.ThrowIfCancellationRequested();
             var camera = cameraMediator.GetInfo();
@@ -76,14 +78,14 @@ namespace Cwseo.NINA.LiveFocus.Models
                         int left = hardware ? 0 : Math.Clamp(x, 0, Math.Max(0, width - size));
                         int top = hardware ? 0 : Math.Clamp(y, 0, Math.Max(0, height - sizeY));
                         int cw = Math.Min(size, width), ch = Math.Min(sizeY, height);
-                        var pixels = new double[cw * ch];
-                        for (int row = 0; row < ch; row++)
-                        {
-                            ct.ThrowIfCancellationRequested();
-                            for (int col = 0; col < cw; col++) pixels[row * cw + col] = raw[(top + row) * width + left + col];
-                        }
+                        // The display consumer needs original ushort pixels, not an
+                        // eight-byte copy of every pixel. Keep the host buffer alive
+                        // only for the current/latest frame; measurements use raw values.
+                        var rawFrame = new FocusRawFrame(raw, width, left, top, cw, ch);
+                        var pixels = retainRawPixels ? null : rawFrame.ToDoubles(ct);
                         yield return new StreamPreviewFrame(pixels, cw, ch, hardware, new PreviewTiming(receiveMs, 0, convertMs, timer.Elapsed.TotalMilliseconds, width, height),
-                            acquisitionStarted, Stopwatch.GetTimestamp(), image.Properties.BitDepth, image.Properties.IsBayered);
+                            acquisitionStarted, Stopwatch.GetTimestamp(), image.Properties.BitDepth, image.Properties.IsBayered,
+                            ExposureSeconds: seconds, RawFrame: retainRawPixels ? rawFrame : null);
                     }
                 }
                 finally

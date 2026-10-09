@@ -58,6 +58,19 @@ internal static partial class PreviewDisplayChecks {
         check(!setup.IsExpanded && toggle.IsChecked==false,"Occasional setup and graphs start folded");
         view.Measure(new Size(350,500));view.Arrange(new Rect(0,0,350,500));view.UpdateLayout();
         view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);view.UpdateLayout();
+        var cameraIndicator=(FrameworkElement)view.FindName("CameraConnectionIndicator");
+        var connectionText=Visuals(cameraIndicator).OfType<TextBlock>().Single();
+        var connectionPath=Visuals(cameraIndicator).OfType<System.Windows.Shapes.Path>().Single();
+        var connectedGeometry=connectionPath.Data;
+        var cameraBefore=vm.CameraInfo;
+        vm.UpdateDeviceInfo(new CameraInfo{Connected=false});
+        view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);view.UpdateLayout();
+        check(connectionText.Text=="Disconnected" && !Equals(connectionPath.Data,connectedGeometry) && cameraIndicator.Visibility==Visibility.Visible,
+            "Camera disconnection updates the always-visible label and X indicator");
+        vm.UpdateDeviceInfo(cameraBefore);
+        view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);view.UpdateLayout();
+        check(connectionText.Text=="Connected" && Equals(connectionPath.Data,connectedGeometry),
+            "Camera reconnection restores the connected check indicator");
         check(vm.ShowInNinaImage && workspace.Visibility==Visibility.Collapsed && ((FrameworkElement)view.FindName("PreviewCard")).Visibility==Visibility.Collapsed,
             "NINA Image is the default output and the duplicate local view uses no workspace");
         check(((FrameworkElement)view.FindName("EssentialControls")).ActualHeight<170 && metric.Visibility==Visibility.Visible,

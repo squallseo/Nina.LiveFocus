@@ -36,6 +36,10 @@ Autofocus, curve fitting, spike autofocus, sequencer instructions and lens confi
 
 Streaming uses NINA's existing camera connection, with no extra SDK handles. Stop waits for the camera reader and any motor movement before releasing the capture reservation. Some native SDK downloads cannot be interrupted immediately. Exact frame rate and available ROI sizes depend on the driver and camera.
 
+Normal streaming retains the host's 16-bit frame and applies a display lookup table instead of expanding the entire ROI into doubles. HFR still uses the original central sensor pixels at their original scale. Bahtinov analysis and diagnostic image recording expand the ROI only when enabled. The camera connection indicator stays visible with Setup folded; hover it for the last frame's exposure, ROI/source sizes and processing-stage timings.
+
+Exposure is not the frame period: sensor readout and USB transfer can dominate even with a short exposure. NINA's QHY live-view path uses 16-bit output and the configured snapshot readout mode. Compare those settings as well as ROI dimensions when comparing another program. [Measured QHY600M pipeline and processing benchmark](docs/live-performance-2026-10-09.md).
+
 ## Build and install
 
 ```powershell
@@ -100,6 +104,7 @@ dotnet run --project Tools/FocusCenteringChecks -c Release -- --live-move --asi
 dotnet run --project Tools/FocusCenteringChecks -c Release -- --auto-roi
 dotnet run --project Tools/FocusCenteringChecks -c Release -- --preview-display
 dotnet run --project Tools/FocusCenteringChecks -c Release -- --focuser
+dotnet run --project Tools/FocusCenteringChecks -c Release -- --preview-perf
 dotnet run --project Tools/FocusStreamChecks -c Release
 dotnet run --project Tools/RoiInteractionChecks -c Release
 dotnet run --project Tools/FocusChecks -c Release

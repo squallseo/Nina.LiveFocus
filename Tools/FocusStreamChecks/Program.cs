@@ -229,6 +229,15 @@ Check(frame.Width == 64 && frame.Height == 32 && frame.Pixels[0] == 8 * 128 + 64
 await stream.DisposeAsync();
 
 var fitted = FocusRoi.Fit(9600, 6422, 512, 1024, 100, 100, 4);
+sourceClosed = false;
+stream = model.StartFocusStreaming(.1, 64, 75, 25, default, roiHeight: 32, retainRawPixels: true);
+frame = await stream.ReadAsync(default);
+Check(frame.Pixels == null && ReferenceEquals(frame.RawFrame.Pixels, pixels) && frame.RawFrame.Width == 64 && frame.RawFrame.Height == 32,
+    "Raw stream retains the host's 16-bit buffer without a full ROI double copy");
+Check(frame.RawFrame.Sample(0) == 8 * 128 + 64 && frame.RawFrame.Sample(64 * 32 - 1) == 39 * 128 + 127 && frame.ExposureSeconds == .1,
+    "Raw stream preserves software crop coordinates, stride and exposure metadata");
+await stream.DisposeAsync();
+Check(sourceClosed, "Raw consumer still drains and closes the sole host stream before restoration");
 Check(fitted.X % 4 == 0 && fitted.Y % 4 == 0 && fitted.Width == 512 && fitted.Height == 1024
     && fitted.X + fitted.Width <= 9600 && fitted.Y + fitted.Height <= 6422,
     "Rectangular QHY ROI stays aligned and inside the sensor at its edge");

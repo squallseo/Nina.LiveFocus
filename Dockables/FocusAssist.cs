@@ -213,13 +213,15 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                         if (!streaming) await FinishMove();
                     }
                     (double[] Pixels, int Width, int Height, bool HardwareRoi) frame;
+                    FocusRawFrame rawFrame = null;
                     LiveFocusModel.PreviewTiming timing;
                     if (streaming)
                     {
-                        stream ??= DataModel.StartFocusStreaming(requestedExposureMs / 1000, roiWidth, centerX, centerY, assistCts.Token, roiHeight);
+                        stream ??= DataModel.StartFocusStreaming(requestedExposureMs / 1000, roiWidth, centerX, centerY, assistCts.Token, roiHeight, retainRawPixels: true);
                         var received = await stream.ReadAsync(assistCts.Token);
                         frame = (received.Pixels, received.Width, received.Height, received.HardwareRoi);
                         timing = received.Timing;
+                        rawFrame = received.RawFrame;
                     }
                     else
                     {
@@ -228,8 +230,9 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                     }
                     var processingTimer = Stopwatch.StartNew();
                     bool mask = AnalyzeBahtinov;
+                    if (rawFrame != null && (mask || diagnostics.IsEnabled)) frame.Pixels = await Task.Run(() => rawFrame.ToDoubles(assistCts.Token), assistCts.Token);
                     var measurement = mask ? await Task.Run(() => BahtinovAnalyzer.Analyze(frame.Pixels, frame.Width, frame.Height), assistCts.Token) : null;
-                    var analysisFrame = FocusRoi.CenterWindow(frame.Pixels, frame.Width, frame.Height);
+                    var analysisFrame = rawFrame != null ? rawFrame.CenterWindow() : FocusRoi.CenterWindow(frame.Pixels, frame.Width, frame.Height);
                     double hfr = await Task.Run(() => QuickFocusMetrics.HalfFluxRadius(analysisFrame.Pixels, analysisFrame.Width, analysisFrame.Height), assistCts.Token);
                     if (diagnostics.IsEnabled && clock.ElapsedMilliseconds - lastSaved >= 5000)
                     {
@@ -256,7 +259,9 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                     assistCts.Token.ThrowIfCancellationRequested();
                     double analysisMs = processingTimer.Elapsed.TotalMilliseconds;
                     processingTimer.Restart();
-                    FocusPreviewImage = await Task.Run(() => RenderFocusPreview(frame.Pixels, frame.Width, frame.Height, measurement), assistCts.Token);
+                    FocusPreviewImage = await Task.Run(() => rawFrame != null
+                        ? RenderRawFocusPreview(rawFrame, measurement)
+                        : RenderFocusPreview(frame.Pixels, frame.Width, frame.Height, measurement), assistCts.Token);
                     assistCts.Token.ThrowIfCancellationRequested();
                     RaisePropertyChanged(nameof(FocusPreviewImage));
                     RaisePropertyChanged(nameof(LiveDisplayImage));
@@ -291,6 +296,8 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                         ? $"Stream receive {timing.CaptureAndDownloadMs:F0} ms | Convert {timing.ConversionMs:F0} | Crop {timing.CropMs:F0} | Analyze {analysisMs:F0} | Preview/graph {previewMs:F0} ms"
                         : $"Capture+download {timing.CaptureAndDownloadMs:F0} ms (host download {timing.HostDownloadMs:F0}) | Convert {timing.ConversionMs:F0} | Crop {timing.CropMs:F0} | Analyze {analysisMs:F0} | Preview/graph {previewMs:F0} ms";
                     RaisePropertyChanged(nameof(LiveTimingText));
+                    LiveFrameDetails = $"Camera: {CameraInfo?.Name}\nExposure {requestedExposureMs:F0} ms | ROI {frame.Width}×{frame.Height} | Source {timing.SourceWidth}×{timing.SourceHeight}\n{LiveTimingText}";
+                    RaisePropertyChanged(nameof(LiveFrameDetails));
                     if (++frames == 1 || frames % 20 == 0)
                         if (Properties.Settings.Default.EnableFocusDiagnostics) Logger.Info($"[LiveFocus/LiveTiming] mode={(streaming ? "stream" : "single")} frame={frames} exposureRequestedMs={requestedExposureMs:F0} intervalMs={now - previous} source={timing.SourceWidth}x{timing.SourceHeight} roi={frame.Width}x{frame.Height} hardwareRoi={frame.HardwareRoi} mask={mask} {LiveTimingText}");
                     SetAssistStatus($"{(streaming ? "Streaming" : "Single frames")} | {(IsMoving ? "Focuser moving | " : "")}{metric} | {now - previous} ms/frame | {(frame.HardwareRoi ? "camera ROI" : "software crop / full download")}");
@@ -323,13 +330,22 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         {
             double level = strength ?? PreviewStretchStrength;
             var bytes = FocusDisplayStretch.Render(pixels, level);
+            return CreateFocusPreview(bytes, width, height, measurement, level, pixels, null);
+        }
+        private ImageSource RenderRawFocusPreview(FocusRawFrame frame, BahtinovMeasurement measurement, double? strength = null)
+        {
+            double level = strength ?? PreviewStretchStrength;
+            return CreateFocusPreview(FocusDisplayStretch.RenderRaw(frame, level), frame.Width, frame.Height, measurement, level, null, frame);
+        }
+        private ImageSource CreateFocusPreview(byte[] bytes, int width, int height, BahtinovMeasurement measurement, double level, double[] pixels, FocusRawFrame raw)
+        {
             var bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray8, null, bytes, width);
             bitmap.Freeze();
             if (measurement?.IsValid != true)
             {
                 // Normal video uses this same bitmap in the chosen viewer: no
                 // DrawingImage wrapper, second pixel buffer or extra rasterization.
-                previewPixels.Add(bitmap, new PreviewPixels(pixels, width, height, measurement, level, bitmap));
+                previewPixels.Add(bitmap, new PreviewPixels(pixels, width, height, measurement, level, bitmap, raw));
                 return bitmap;
             }
             var group = new DrawingGroup();
@@ -349,7 +365,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 }
             }
             var result = new DrawingImage(group); result.Freeze();
-            previewPixels.Add(result, new PreviewPixels(pixels, width, height, measurement, level, bitmap));
+            previewPixels.Add(result, new PreviewPixels(pixels, width, height, measurement, level, bitmap, raw));
             return result;
         }
     }
