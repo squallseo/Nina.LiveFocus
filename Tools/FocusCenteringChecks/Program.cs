@@ -27,6 +27,7 @@ if(args.Contains("--auto-roi")){AutoRoiVmChecks.Run(Check);Console.WriteLine($"{
 if(args.Contains("--preview-display")){PreviewDisplayChecks.Run(Check);Console.WriteLine($"{passed} preview display checks passed; no hardware operated.");return;}
 if(args.Contains("--focuser")){FocuserChecks.Run(Check);Console.WriteLine($"{passed} manual focuser checks passed; no hardware operated.");return;}
 if(args.Contains("--preview-perf")){PreviewPerformance.Run();return;}
+if(args.Contains("--targets")){TargetPickerChecks.Run(Check);Console.WriteLine($"{passed} target picker checks passed; no hardware operated.");return;}
 var settings = new Dictionary<string, object> {
     ["ExposureTime"] = 3.0, ["Gain"] = 42, ["Binning"] = (short)2,
     ["Threshold"] = .5, ["NumberOfAttempts"] = 2, ["ReattemptDelay"] = .1,

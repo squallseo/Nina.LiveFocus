@@ -84,8 +84,17 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         [ImportingConstructor]
         public LiveFocusDockableVM(IProfileService profiles, ICameraMediator camera, IImagingMediator imaging,
             IFilterWheelMediator wheel, IFocuserMediator focuser, ITelescopeMediator telescope, IGuiderMediator guider,
-            IDomeMediator dome, IDomeFollower follower, IPlateSolverFactory solver, IApplicationStatusMediator status) : base(profiles)
+            IDomeMediator dome, IDomeFollower follower, IPlateSolverFactory solver, IApplicationStatusMediator status)
+            : this(profiles, camera, imaging, wheel, focuser, telescope, guider, dome, follower, solver, status,
+                new NinaFocusTargetCatalogue(), () => DateTime.UtcNow) { }
+
+        public LiveFocusDockableVM(IProfileService profiles, ICameraMediator camera, IImagingMediator imaging,
+            IFilterWheelMediator wheel, IFocuserMediator focuser, ITelescopeMediator telescope, IGuiderMediator guider,
+            IDomeMediator dome, IDomeFollower follower, IPlateSolverFactory solver, IApplicationStatusMediator status,
+            IFocusTargetCatalogue catalogue, Func<DateTime> utcNow) : base(profiles)
         {
+            targetCatalogue = catalogue ?? throw new ArgumentNullException(nameof(catalogue));
+            targetUtcNow = utcNow ?? throw new ArgumentNullException(nameof(utcNow));
             cameraMediator = camera; imagingMediator = imaging; filterWheelMediator = wheel; focuserMediator = focuser;
             telescopeMediator = telescope; guiderMediator = guider; domeMediator = dome; domeFollower = follower;
             plateSolverFactory = solver; applicationStatusMediator = status;
@@ -142,7 +151,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public void UpdateUserFocused(FocuserInfo info) { UpdateDeviceInfo(info); }
         public void Dispose()
         {
-            if (disposed) return; disposed = true; stretchRefresh?.Cancel(); assistCts?.Cancel(); moveCts?.Cancel(); gotoCts?.Cancel(); StopObservingPreparedImages();
+            if (disposed) return; disposed = true; targetSearchCts?.Cancel(); stretchRefresh?.Cancel(); assistCts?.Cancel(); moveCts?.Cancel(); gotoCts?.Cancel(); StopObservingPreparedImages();
             // Disposal already sets disposed: bypass the update guard for UI cleanup.
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
             void CleanViews() { StopMainRoiEditor(); StopMainImageGraphs(); }

@@ -19,7 +19,15 @@ The receive stage dominates at both sizes. ROI copy/render optimization cannot b
 
 Windows PnP identified the camera as `QHY600U3G20-20221128`, below a parent described as **USB2.0 HUB**, port 4. A read-only `IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX_V2` query to that hub returned supported protocols `3` (USB 1.1/2.0) and flags `2`: **SuperSpeed capable, but not operating at SuperSpeed**. This confirms a USB2 connection for the camera, despite the PC having a USB3 host controller. The query opened only the hub for metadata inspection; it did not open the camera SDK, reset a port or change settings.
 
-A direct USB3 connection using a USB3 cable, with the same ROI/exposure/readout mode, is the next controlled comparison. That test has been requested but not yet completed. The USB2 connection is a confirmed bandwidth constraint; the proportion of the receive delay caused by USB versus sensor/driver readout has not been isolated. A PhotoGraphic DSO 16BIT comparison was also requested before discovering the USB2 path and remains unmeasured. SharpCap was not measured with matching readout mode, bit depth, exposure and ROI, so there is no measured application-to-application FPS comparison.
+The user identified the intermediate device as a Gemini PowerBox & Hub Mini V2. Moving the hub's PC cable to another PC port still left the camera on the USB2 branch. A separate read-only query for the parent hub's connection also returned flags `2`, and no SuperSpeed hub branch was enumerated. This identifies the hub-to-PC connection as a segment requiring investigation; it does not establish whether the hub, cable or contact is faulty.
+
+After the camera was connected directly, its port query returned supported protocols `4` (USB3) and flags `3`: **SuperSpeed capable and operating at SuperSpeed**. A subsequent snapshot of the stopped preview retained this last completed frame:
+
+| Delivered ROI | Exposure | Readout | Receive | Convert | Crop | Analyze | Preview/graph |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 9556 × 6368 (60.85 MP) | 250 ms | 2CMS-0 / index 8 | 861 ms | 0 ms | 0 ms | 4 ms | 107 ms |
+
+The frame size differs from the USB2 measurements, so this is a recorded full-frame example, not a same-ROI comparison or an average frame rate. It confirms the changed USB link and a much shorter receive time even at the larger size. The proportion of the original delay caused by USB versus sensor/driver readout has not been isolated. A PhotoGraphic DSO 16BIT comparison remains unmeasured. SharpCap was not measured with matching readout mode, bit depth, exposure and ROI, so there is no measured application-to-application FPS comparison.
 
 ## Processing change and synthetic benchmark
 
@@ -37,7 +45,7 @@ The local `--preview-perf` harness used synthetic noise/star pixels, warmed each
 | 5744 × 4256 | 47.42 ms | 147.53 ms | 33.03 ms | 186.51 MiB |
 | 9576 × 6388 (synthetic) | 151.86 ms | 372.29 ms | 59.72 ms | 466.70 MiB |
 
-The new build has not yet been measured on the physical camera. Full traces and process snapshots stay local; no camera frames or dumps are committed. Automatic diagnostic recording remains off by default.
+The raw-preview processing change was subsequently observed on the physical camera at 1024 × 1024, 250 ms and 2CMS-0: receive 1337 ms, convert/crop 0 ms, analyze 4 ms and preview/graph 7 ms while still on the USB2 path. The later direct-USB3 example above uses this path too. Full traces and process snapshots stay local; no camera frames or dumps are committed. Automatic diagnostic recording remains off by default.
 
 ## Verification and sources
 

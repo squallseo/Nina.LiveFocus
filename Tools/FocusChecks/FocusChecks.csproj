@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="NINA.Astrometry" Version="3.2.0.9001" />
     <Compile Include="../../Models/FocusStarPlanner.cs" Link="FocusStarPlanner.cs" />
+    <Compile Include="../../Models/FocusTargetPlanner.cs" Link="FocusTargetPlanner.cs" />
+    <Compile Include="../../Models/FocusTargetCatalogue.cs" Link="FocusTargetCatalogue.cs" />
     <None Include="$(NinaInstallDir)\External\x64\SOFA\*.dll" Link="External\x64\SOFA\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(NinaInstallDir)\External\x64\NOVAS\*" Link="External\x64\NOVAS\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(NinaInstallDir)\External\JPLEPH" Link="External\JPLEPH" CopyToOutputDirectory="PreserveNewest" />

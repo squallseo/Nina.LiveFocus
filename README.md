@@ -20,6 +20,7 @@ ROI editing uses the main Image panel when it is visible; **Retake / Done** rema
 
 - Absolute focuser position, adjustable In / Out steps and cancellation.
 - Bright-star selection from NINA's catalogue, with adjustable minimum altitude and maximum magnitude, plus profile horizon clearance. Every matching star is listed; there is no 20-star cap.
+- A shared **Stars / Deep sky / Solar system** target picker with asynchronous name/ID search. Deep sky uses NINA's local Sky Atlas; Moon/planet coordinates use NINA's native ephemeris and the profile's observer location.
 - Separate **Slew** (coordinates only) and **Slew + Center** (NINA's configured plate solver) buttons. Active guiding is stopped before either move; disconnected, stopped, looping and selected guiders need no stop request. Guiding is not automatically restarted.
 - A **Sync mount** toggle beside the target actions directly controls NINA's existing profile **No Sync** setting, with the value inverted. There is no separate overriding setting.
 - Live ROI preview, local HFR history and the star intensity profile. On streaming cameras, preview continues during focuser movement.
@@ -70,7 +71,7 @@ NINA supplies its own libraries; do not copy every dependency from the build dir
 
 ## Using it
 
-1. Connect the camera and focuser. Open **Setup** to optionally choose a focus star and use **Slew** or **Slew + Center**. **Alt ≥** defaults to 45° and **Mag ≤** to 4.0. Smaller magnitude limits select brighter stars; larger limits include fainter stars. Use the refresh icon after editing either filter. A star must also clear the profile horizon by 5°. Remove a Bahtinov mask for plate solving.
+1. Connect the camera and focuser. Open **Setup → Go to target** to choose **Stars**, **Deep sky** or **Solar system**, search and select a target, then use **Slew** or **Slew + Center**. For stars, **Alt ≥** defaults to 45° and **Mag ≤** to 4.0. Smaller magnitude limits select brighter stars; larger limits include fainter stars. Search and filter edits update the list automatically; the refresh icon recalculates current visibility. A star must also clear the profile horizon by 5°. Remove a Bahtinov mask for plate solving. Moon/planets use **Slew**.
 2. Open NINA's **Image** panel. In Setup, choose **Edit ROI**, edit the yellow box directly in Image, then use **Done** in Live Focus. Zoom, scroll, rotation and flip keep the ROI in sensor coordinates. With Image closed, use the temporary local editor. **Auto ROI** is an alternative near the target star. Enable Bahtinov overlay here when using a mask.
 3. Fold Setup, open NINA's **Image** panel, set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR. Turn on Graphs when needed. Movement Stop and target-move cancellation remain available with Setup folded.
 4. Adjust Stretch if the preview is too bright. Stop preview before changing exposure or ROI.
@@ -79,7 +80,7 @@ Main Image output is **on by default** and display-only: adjust stretch and read
 
 Output uses NINA's public [IImagingMediator.SetImage](https://github.com/isbeorn/nina/blob/develop/NINA.Equipment/Interfaces/Mediator/IImagingMediator.cs) display API. The dispatcher keeps at most one pending output callback and uses the latest frame; it does not prepare or record every video frame.
 
-**Slew** never captures, solves or syncs the mount. It can work with the camera disconnected; with a connected camera it reserves capture ownership during movement to prevent overlapping exposures. **Slew + Center** uses NINA's centering tolerance and honors the profile's **No Sync** setting. Find it under **Options → Equipment → Telescope → No Sync**, or use **Setup → Focus star → Sync mount** in Live Focus (on means No Sync is off). This changes the shared NINA profile setting and applies to other NINA centering operations too. A successful sync can improve later slews, but it does not guarantee full-sky pointing accuracy. With No Sync enabled, NINA centers using an offset without updating the mount's pointing model. See [NINA No Sync](https://nighttime-imaging.eu/docs/master/site/tabs/options/equipment/#no-sync).
+**Slew** never captures, solves or syncs the mount. It can work with the camera disconnected; with a connected camera it reserves capture ownership during movement to prevent overlapping exposures. **Slew + Center** uses NINA's centering tolerance and honors the profile's **No Sync** setting. Find it under **Options → Equipment → Telescope → No Sync**, or use **Setup → Go to target → Sync mount** in Live Focus (on means No Sync is off). This changes the shared NINA profile setting and applies to other NINA centering operations too. A successful sync can improve later slews, but it does not guarantee full-sky pointing accuracy. With No Sync enabled, NINA centers using an offset without updating the mount's pointing model. See [NINA No Sync](https://nighttime-imaging.eu/docs/master/site/tabs/options/equipment/#no-sync).
 
 Guider preparation skips idle/disconnected devices. A failed stop request is accepted only if the guider has since disconnected or is confirmed idle; an active/unknown connected state still blocks movement on failure. User cancellation and guiding restarted during the move remain distinct from an already-stopped guider. This does not infer that every pointing failure is a guiding failure: camera ownership, parked mount and plate-solving errors also have their own checks.
 
@@ -87,15 +88,15 @@ Streaming and diagnostics settings are in NINA's plugin options. Diagnostics, wh
 
 The star picker uses NINA's existing bright-star catalogue. Increasing the magnitude limit cannot add stars absent from that catalogue. Its status shows the matching/catalogue counts and applied filters, and Refresh preserves your selected star when it still matches. [Star filter layout](docs/live-focus-star-filters.png).
 
-## Target search proposal
+## Target search
 
-The current release has the bright-star picker only. A future shared target picker should offer **Stars / Deep sky / Solar system** categories, a search box and the same Slew actions inside folded Setup:
+**Setup → Go to target** shares one search box, target list and movement controls across three categories. Setup remains folded by default to preserve image space. [Target picker layout, rendered with synthetic data](docs/live-focus-target-search.png).
 
-- **Stars:** keep altitude, magnitude and horizon filters.
-- **Deep sky:** reuse NINA's local Sky Atlas catalogue for names and identifiers such as M, NGC and IC. Use object-specific filters; do not apply the bright-star magnitude limit.
-- **Solar system:** list the Moon and planets, calculate topocentric coordinates from the profile location and current time, and recalculate just before slewing. Use Slew by default: stellar plate solving centers a coordinate field, not the visible lunar or planetary disk, and may fail when insufficient background stars are visible.
+- **Stars:** search NINA's bright-star catalogue case-insensitively, with the existing altitude/magnitude and horizon filters.
+- **Deep sky:** search NINA's local Sky Atlas catalogue by common name or M/NGC/IC identifier; spaces and leading zeroes in these IDs are accepted. Catalogue aliases are searched; results show a matching name, current altitude and available magnitude. Up to 100 catalogue matches are shown; refine the search when the limit is reached. Star altitude/magnitude filters do not apply.
+- **Solar system:** list the Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus and Neptune. English and Korean names are searchable. Calculate topocentric coordinates using NINA's NOVAS/JPL ephemeris, UTC converted to terrestrial time with SOFA, and the profile latitude/longitude/elevation. Recalculate after guider preparation, immediately before slewing. **Slew + Center** is disabled for these targets: stellar plate solving centers a coordinate field, not the visible lunar or planetary disk. The plugin does not change the mount's tracking rate.
 
-These categories and search controls are a design proposal, not implemented features.
+Deep-sky and solar-system targets remain in the list below the horizon so they can be found; movement requires at least 5° altitude and 5° clearance above the profile horizon, checked again just before Slew. Search runs off the UI thread with a 350 ms typing delay. Changing the query/category clears the old selection immediately; cancelled/late results cannot replace the latest list. Refresh preserves the selected catalogue identity when it still matches. Category/search/selection are locked during GOTO. Catalogues and ephemerides are local; the observer location must be set correctly in the active NINA profile.
 
 ## Verification
 
@@ -103,6 +104,7 @@ The console harnesses use synthetic frames and fake equipment mediators; they ne
 
 ```powershell
 dotnet run --project Tools/FocusCenteringChecks -c Release
+dotnet run --project Tools/FocusCenteringChecks -c Release -- --targets
 dotnet run --project Tools/FocusCenteringChecks -c Release -- --live-move
 dotnet run --project Tools/FocusCenteringChecks -c Release -- --live-move --asi
 dotnet run --project Tools/FocusCenteringChecks -c Release -- --auto-roi

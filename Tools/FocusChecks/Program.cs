@@ -61,4 +61,5 @@ var stars = await new DatabaseInteraction().GetBrightStars();
 Check(stars.Count > 0, "Installed NINA bright-star catalogue is readable");
 var suggestions = stars.Select(s => FocusStarPlanner.Calculate(s.Name, s.Coordinates, s.Magnitude, 37.708818, 128.443974, 1000, utc)).ToList();
 Check(suggestions.All(s => double.IsFinite(s.Altitude) && double.IsFinite(s.Azimuth)), "Every catalogue star transforms to finite horizontal coordinates");
+await TargetCatalogueChecks.Run(Check);
 Console.WriteLine($"{passed} checks passed; no telescope or camera commands were sent.");

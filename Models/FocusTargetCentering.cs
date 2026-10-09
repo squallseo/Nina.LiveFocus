@@ -22,8 +22,8 @@ namespace Cwseo.NINA.LiveFocus.Models
         public FocusTargetCentering(IProfile profile, CameraInfo camera, Coordinates target)
         {
             var settings = profile.PlateSolveSettings;
-            if (camera?.Connected != true) throw new InvalidOperationException("Connect the camera before centering a focus star.");
-            if (target == null) throw new ArgumentException("Select a focus star.", nameof(target));
+            if (camera?.Connected != true) throw new InvalidOperationException("Connect the camera before centering a target.");
+            if (target == null) throw new ArgumentException("Select a target.", nameof(target));
             if (!double.IsFinite(settings.ExposureTime) || settings.ExposureTime <= 0 ||
                 (camera.ExposureMin > 0 && settings.ExposureTime < camera.ExposureMin) ||
                 (camera.ExposureMax > 0 && settings.ExposureTime > camera.ExposureMax))
@@ -67,12 +67,12 @@ namespace Cwseo.NINA.LiveFocus.Models
             var result = await solver.Center(Sequence, Parameter, solveProgress, progress, cancellation);
             cancellation.ThrowIfCancellationRequested();
             if (result?.Success != true || result.Coordinates == null)
-                throw new InvalidOperationException("Plate solving could not center the star. Check NINA's solver settings, exposure and focus; remove the Bahtinov mask while solving.");
+                throw new InvalidOperationException("Plate solving could not center the target. Check NINA's solver settings, exposure and focus; remove the Bahtinov mask while solving.");
             // Verify the final image coordinates rather than trusting a success flag
             // or a previous attempt's separation. Tolerance is in arcminutes.
             double arcseconds = Math.Abs((Parameter.Coordinates - result.Coordinates).Distance.ArcSeconds);
             if (!double.IsFinite(arcseconds) || arcseconds > Parameter.Threshold * 60)
-                throw new InvalidOperationException("The solved star position is still outside NINA's centering tolerance.");
+                throw new InvalidOperationException("The solved target position is still outside NINA's centering tolerance.");
             return arcseconds;
         }
     }

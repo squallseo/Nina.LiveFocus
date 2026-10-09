@@ -286,7 +286,7 @@ internal static class VmChecks {
             owner = null; RefreshAvailability();
             check(tooltipUpdates == notifications + 1 && vm.GotoFocusTargetCommand.CanExecute(null), "Capture ownership changes refresh GOTO even when device connection flags stay the same");
             vm.SelectedFocusTarget = null;
-            check(!vm.GotoFocusTargetCommand.CanExecute(null) && vm.GotoFocusTargetTooltip.Contains("Select a focus star"), "Empty star selection provides the Refresh instruction");
+            check(!vm.GotoFocusTargetCommand.CanExecute(null) && vm.GotoFocusTargetTooltip.Contains("Select a target") && vm.GotoFocusTargetTooltip.Contains("Refresh"), "Empty target selection provides search and Refresh instructions");
             check(blocks == releases, "Every acquired GOTO capture reservation is released across all outcomes");
         }
     }

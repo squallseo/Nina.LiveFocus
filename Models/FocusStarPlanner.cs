@@ -7,12 +7,19 @@ namespace Cwseo.NINA.LiveFocus.Models
 {
     public sealed class FocusStarSuggestion
     {
+        public FocusTargetKind Kind { get; init; }
+        public string Id { get; init; }
         public string Name { get; init; }
+        public string[] Aliases { get; init; } = Array.Empty<string>();
+        public string Description { get; init; }
+        public NOVAS.Body? SolarBody { get; init; }
         public Coordinates Coordinates { get; init; }
         public double Magnitude { get; init; }
         public double Altitude { get; init; }
         public double Azimuth { get; init; }
-        public string Display => $"{Name} · mag {Magnitude:F1} · alt {Altitude:F1}° · az {Azimuth:F1}°";
+        public string Display => $"{Name}" +
+            (double.IsFinite(Magnitude) ? $" · mag {Magnitude:F1}" : "") +
+            $" · alt {Altitude:F1}° · az {Azimuth:F1}°";
     }
 
     public static class FocusStarPlanner

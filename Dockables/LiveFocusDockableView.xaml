@@ -1,4 +1,4 @@
-<UserControl x:Class="Cwseo.NINA.LiveFocus.Dockables.LiveFocusDockableView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:local="clr-namespace:Cwseo.NINA.LiveFocus.Dockables" xmlns:ninactrl="clr-namespace:NINA.CustomControlLibrary;assembly=NINA.CustomControlLibrary" xmlns:enum="clr-namespace:NINA.Core.Enum;assembly=NINA.Core" xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core" xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Contrib.Wpf" xmlns:oxys="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf.Shared" xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core" xmlns:wpfutil="clr-namespace:NINA.WPF.Base.Utility;assembly=NINA.WPF.Base" mc:Ignorable="d" d:DesignHeight="700" d:DesignWidth="650" Foreground="{DynamicResource PrimaryBrush}" FontFamily="Segoe UI" FontSize="12">
+<UserControl x:Class="Cwseo.NINA.LiveFocus.Dockables.LiveFocusDockableView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:local="clr-namespace:Cwseo.NINA.LiveFocus.Dockables" xmlns:models="clr-namespace:Cwseo.NINA.LiveFocus.Models" xmlns:ninactrl="clr-namespace:NINA.CustomControlLibrary;assembly=NINA.CustomControlLibrary" xmlns:enum="clr-namespace:NINA.Core.Enum;assembly=NINA.Core" xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core" xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Contrib.Wpf" xmlns:oxys="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf.Shared" xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core" xmlns:wpfutil="clr-namespace:NINA.WPF.Base.Utility;assembly=NINA.WPF.Base" mc:Ignorable="d" d:DesignHeight="700" d:DesignWidth="650" Foreground="{DynamicResource PrimaryBrush}" FontFamily="Segoe UI" FontSize="12">
   <UserControl.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
@@ -262,7 +262,7 @@
           </Grid>
         </StackPanel>
       </Border>
-      <Expander x:Name="SetupExpander" IsExpanded="False" Margin="2,0,2,4" ToolTip="Choose the star area, slew to a focus star or set an absolute focuser position. Fold this after setup to enlarge the image.">
+      <Expander x:Name="SetupExpander" IsExpanded="False" Margin="2,0,2,4" ToolTip="Choose the star area, slew to a star, deep-sky object, Moon or planet, or set an absolute focuser position. Fold this after setup to enlarge the image.">
         <Expander.Header>
           <StackPanel Orientation="Horizontal">
             <TextBlock Text="Setup" FontWeight="SemiBold" />
@@ -312,16 +312,37 @@
             </Border>
             <Border x:Name="StarSetupCard" Grid.Row="1" Style="{StaticResource FocusCard}" Padding="10">
               <StackPanel>
-                <TextBlock Text="Focus star" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6" />
+                <TextBlock Text="Go to target" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6" />
+                <Grid Margin="0,0,0,6">
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="112" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                  <ComboBox x:Name="TargetCategoryPicker" ItemsSource="{Binding TargetKinds}" SelectedItem="{Binding SelectedTargetKind, Mode=TwoWay}" IsEnabled="{Binding CanEditTargets}" MinHeight="28" Margin="0,0,6,0" AutomationProperties.Name="Target category">
+                    <ComboBox.ItemTemplate><DataTemplate><TextBlock>
+                      <TextBlock.Style><Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="Stars" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding}" Value="{x:Static models:FocusTargetKind.DeepSky}"><Setter Property="Text" Value="Deep sky" /></DataTrigger>
+                          <DataTrigger Binding="{Binding}" Value="{x:Static models:FocusTargetKind.SolarSystem}"><Setter Property="Text" Value="Solar system" /></DataTrigger>
+                        </Style.Triggers>
+                      </Style></TextBlock.Style>
+                    </TextBlock></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Grid Grid.Column="1">
+                    <TextBox x:Name="TargetSearchInput" Text="{Binding FocusTargetQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditTargets}" MinHeight="28" ToolTip="{Binding TargetSearchHint}" AutomationProperties.Name="Search target name or catalogue ID" />
+                    <TextBlock Text="Search name or ID" IsHitTestVisible="False" Margin="6,0,2,0" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SecondaryBrush}">
+                      <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding FocusTargetQuery}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                    </TextBlock>
+                  </Grid>
+                </Grid>
                 <WrapPanel Margin="0,0,0,6">
+                  <WrapPanel.Style><Style TargetType="WrapPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsStarTargetCategory}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></WrapPanel.Style>
                   <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
                     <TextBlock Text="Alt ≥" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                    <TextBox x:Name="MinimumAltitudeInput" Width="42" MinHeight="26" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Minimum star altitude" ToolTip="Minimum altitude in degrees (15 to 85). Refresh after changing. Stars must also clear the profile horizon by 5°." />
+                    <TextBox x:Name="MinimumAltitudeInput" Width="42" MinHeight="26" IsEnabled="{Binding CanEditTargets}" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Minimum star altitude" ToolTip="Minimum star altitude in degrees (15 to 85). Stars must also clear the profile horizon by 5°. The list updates after editing." />
                     <TextBlock Text="°" VerticalAlignment="Center" Margin="3,0,0,0" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Mag ≤" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                    <TextBox x:Name="MaximumMagnitudeInput" Width="48" MinHeight="26" Text="{Binding MaximumFocusMagnitude, StringFormat=F1, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Maximum star magnitude" ToolTip="Faintest allowed magnitude (-2 to 20). Smaller numbers select brighter stars; larger numbers allow fainter stars. Refresh after changing. Only stars in NINA's bright-star catalogue are available." />
+                    <TextBox x:Name="MaximumMagnitudeInput" Width="48" MinHeight="26" IsEnabled="{Binding CanEditTargets}" Text="{Binding MaximumFocusMagnitude, StringFormat=F1, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Maximum star magnitude" ToolTip="Faintest allowed star magnitude (-2 to 20). Smaller numbers select brighter stars. The list updates after editing. Only NINA's bright-star catalogue is searched; this filter does not apply to deep sky or planets." />
                   </StackPanel>
                 </WrapPanel>
                 <Grid Margin="0,0,0,6">
@@ -329,14 +350,14 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <ComboBox x:Name="FocusStarPicker" MinHeight="28" ItemsSource="{Binding FocusTargets}" SelectedItem="{Binding SelectedFocusTarget}" MaxDropDownHeight="240" AutomationProperties.Name="Focus star" ToolTip="NINA bright-star catalogue filtered by altitude, magnitude and profile horizon. Every matching star is listed, ordered by altitude.">
+                  <ComboBox x:Name="FocusStarPicker" MinHeight="28" IsEnabled="{Binding CanEditTargets}" ItemsSource="{Binding FocusTargets}" SelectedItem="{Binding SelectedFocusTarget}" MaxDropDownHeight="240" AutomationProperties.Name="GOTO target" ToolTip="{Binding TargetSearchHint}">
                     <ComboBox.ItemTemplate>
                       <DataTemplate>
-                        <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" FontSize="11" />
+                        <TextBlock Text="{Binding Display}" ToolTip="{Binding Display}" TextTrimming="CharacterEllipsis" FontSize="11" />
                       </DataTemplate>
                     </ComboBox.ItemTemplate>
                   </ComboBox>
-                  <Button Grid.Column="1" Width="28" Padding="5" Style="{StaticResource FocusButton}" Command="{Binding RefreshFocusTargetsCommand}" Margin="6,0,0,0" ToolTip="Apply the altitude and magnitude filters using the current time and profile location." AutomationProperties.Name="Refresh focus stars">
+                  <Button Grid.Column="1" Width="28" Padding="5" Style="{StaticResource FocusButton}" Command="{Binding RefreshFocusTargetsCommand}" Margin="6,0,0,0" ToolTip="Refresh matching targets using the current time and NINA profile location." AutomationProperties.Name="Refresh targets">
                     <Viewbox Width="14" Height="14">
                       <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 16,2 L 16,7 L 11,7 L 13,5 A 6,6 0 1 0 14,11 L 16,11 A 8,8 0 1 1 14.5,3.5 Z" />
                     </Viewbox>
