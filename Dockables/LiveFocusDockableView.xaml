@@ -316,8 +316,8 @@
             <Border x:Name="StarSetupCard" Grid.Row="1" Style="{StaticResource FocusCard}" Padding="10">
               <StackPanel>
                 <TextBlock Text="Go to target" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6" />
-                <Grid Margin="0,0,0,6">
-                  <Grid.ColumnDefinitions><ColumnDefinition Width="112" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Grid x:Name="TargetCriteriaRow" Margin="0,0,0,6">
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="104" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                   <ComboBox x:Name="TargetCategoryPicker" ItemsSource="{Binding TargetKinds}" SelectedItem="{Binding SelectedTargetKind, Mode=TwoWay}" IsEnabled="{Binding CanEditTargets}" MinHeight="28" Margin="0,0,6,0" AutomationProperties.Name="Target category">
                     <ComboBox.ItemTemplate><DataTemplate><TextBlock>
                       <TextBlock.Style><Style TargetType="TextBlock">
@@ -329,25 +329,26 @@
                       </Style></TextBlock.Style>
                     </TextBlock></DataTemplate></ComboBox.ItemTemplate>
                   </ComboBox>
-                  <Grid Grid.Column="1">
+                  <Grid x:Name="TargetSearchPanel" Grid.Column="1">
+                    <Grid.Style><Style TargetType="Grid"><Setter Property="Visibility" Value="Visible" /><Style.Triggers><DataTrigger Binding="{Binding IsStarTargetCategory}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></Grid.Style>
                     <TextBox x:Name="TargetSearchInput" Text="{Binding FocusTargetQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditTargets}" MinHeight="28" ToolTip="{Binding TargetSearchHint}" AutomationProperties.Name="Search target name or catalogue ID" />
                     <TextBlock Text="Search name or ID" IsHitTestVisible="False" Margin="6,0,2,0" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SecondaryBrush}">
                       <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding FocusTargetQuery}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
                     </TextBlock>
                   </Grid>
+                  <WrapPanel x:Name="StarFilterPanel" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <WrapPanel.Style><Style TargetType="WrapPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsStarTargetCategory}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></WrapPanel.Style>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,4,0">
+                      <TextBlock Text="Alt≥" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                      <TextBox x:Name="MinimumAltitudeInput" Width="42" MinHeight="26" IsEnabled="{Binding CanEditTargets}" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Minimum star altitude" ToolTip="Minimum star altitude in degrees (15 to 85). Stars must also clear the profile horizon by 5°. The list updates after editing." />
+                      <TextBlock Text="°" VerticalAlignment="Center" Margin="3,0,0,0" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="Mag≤" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                      <TextBox x:Name="MaximumMagnitudeInput" Width="48" MinHeight="26" IsEnabled="{Binding CanEditTargets}" Text="{Binding MaximumFocusMagnitude, StringFormat=F1, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Maximum star magnitude" ToolTip="Faintest allowed star magnitude (-2 to 20). Smaller numbers select brighter stars. The list updates after editing. Only NINA's bright-star catalogue is searched; this filter does not apply to deep sky or planets." />
+                    </StackPanel>
+                  </WrapPanel>
                 </Grid>
-                <WrapPanel Margin="0,0,0,6">
-                  <WrapPanel.Style><Style TargetType="WrapPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsStarTargetCategory}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></WrapPanel.Style>
-                  <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                    <TextBlock Text="Alt ≥" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                    <TextBox x:Name="MinimumAltitudeInput" Width="42" MinHeight="26" IsEnabled="{Binding CanEditTargets}" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Minimum star altitude" ToolTip="Minimum star altitude in degrees (15 to 85). Stars must also clear the profile horizon by 5°. The list updates after editing." />
-                    <TextBlock Text="°" VerticalAlignment="Center" Margin="3,0,0,0" />
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Mag ≤" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                    <TextBox x:Name="MaximumMagnitudeInput" Width="48" MinHeight="26" IsEnabled="{Binding CanEditTargets}" Text="{Binding MaximumFocusMagnitude, StringFormat=F1, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Maximum star magnitude" ToolTip="Faintest allowed star magnitude (-2 to 20). Smaller numbers select brighter stars. The list updates after editing. Only NINA's bright-star catalogue is searched; this filter does not apply to deep sky or planets." />
-                  </StackPanel>
-                </WrapPanel>
                 <Grid Margin="0,0,0,6">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

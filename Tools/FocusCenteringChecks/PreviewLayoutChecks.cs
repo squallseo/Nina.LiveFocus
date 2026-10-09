@@ -138,6 +138,13 @@ internal static partial class PreviewDisplayChecks {
             var magnitudeBounds=magnitudeInput.TransformToAncestor(starCard).TransformBounds(new Rect(magnitudeInput.RenderSize));
             check(altitudeInput.ActualWidth>=40 && magnitudeInput.ActualWidth>=48 && magnitudeBounds.Left>=0 && magnitudeBounds.Right<=starCard.ActualWidth,
                 "Altitude and magnitude filters fit together in compact star setup at "+label);
+            var category=(ComboBox)view.FindName("TargetCategoryPicker");
+            var categoryBounds=category.TransformToAncestor(starCard).TransformBounds(new Rect(category.RenderSize));
+            var altitudeBounds=altitudeInput.TransformToAncestor(starCard).TransformBounds(new Rect(altitudeInput.RenderSize));
+            check(((FrameworkElement)view.FindName("TargetSearchPanel")).Visibility==Visibility.Collapsed &&
+                altitudeBounds.Left>=categoryBounds.Right && Math.Abs(altitudeBounds.Top-magnitudeBounds.Top)<2 &&
+                Math.Abs(categoryBounds.Top+categoryBounds.Height/2-altitudeBounds.Top-altitudeBounds.Height/2)<2,
+                "Stars show Alt and Mag on the category row in place of name search at "+label);
             check(width<616 ? starCard.TranslatePoint(new Point(),view).Y>=roiCard.TranslatePoint(new Point(),view).Y+roiCard.ActualHeight
                 : starCard.TranslatePoint(new Point(),view).X>=roiCard.TranslatePoint(new Point(),view).X+roiCard.ActualWidth,
                 "ROI and star setup cards do not overlap on initial layout or resizing at "+label);

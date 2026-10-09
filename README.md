@@ -20,7 +20,7 @@ ROI editing uses the main Image panel when it is visible; **Retake / Done** rema
 
 - Absolute focuser position, adjustable In / Out steps and cancellation.
 - Bright-star selection from NINA's catalogue, with adjustable minimum altitude and maximum magnitude, plus profile horizon clearance. Every matching star is listed; there is no 20-star cap.
-- A shared **Stars / Deep sky / Solar system** target picker with asynchronous name/ID search. Deep sky uses NINA's local Sky Atlas; Moon/planet coordinates use NINA's native ephemeris and the profile's observer location.
+- A shared **Stars / Deep sky / Solar system** target picker. Stars use altitude/magnitude filters; deep sky and solar system use asynchronous name/ID search. Deep sky uses NINA's local Sky Atlas; Moon/planet coordinates use NINA's native ephemeris and the profile's observer location.
 - Separate **Slew** (coordinates only) and **Slew + Center** (NINA's configured plate solver) buttons. Active guiding is stopped before either move; disconnected, stopped, looping and selected guiders need no stop request. Guiding is not automatically restarted.
 - A **Sync mount** toggle beside the target actions directly controls NINA's existing profile **No Sync** setting, with the value inverted. There is no separate overriding setting.
 - Live ROI preview, ROI HFR in the native HFR History panel and an optional local star intensity profile. On streaming cameras, preview continues during focuser movement.
@@ -72,7 +72,7 @@ NINA supplies its own libraries; do not copy every dependency from the build dir
 
 ## Using it
 
-1. Connect the camera and focuser. Open **Setup → Go to target** to choose **Stars**, **Deep sky** or **Solar system**, search and select a target, then use **Slew** or **Slew + Center**. For stars, **Alt ≥** defaults to 45° and **Mag ≤** to 4.0. Smaller magnitude limits select brighter stars; larger limits include fainter stars. Search and filter edits update the list automatically; the refresh icon recalculates current visibility. A star must also clear the profile horizon by 5°. Remove a Bahtinov mask for plate solving. Moon/planets use **Slew**.
+1. Connect the camera and focuser. Open **Setup → Go to target** to choose **Stars**, **Deep sky** or **Solar system**, filter or search and select a target, then use **Slew** or **Slew + Center**. For stars, the category row shows **Alt ≥** defaults to 45° and **Mag ≤** to 4.0. Smaller magnitude limits select brighter stars; larger limits include fainter stars. Search and filter edits update the list automatically; the refresh icon recalculates current visibility. A star must also clear the profile horizon by 5°. Remove a Bahtinov mask for plate solving. Moon/planets use **Slew**.
 2. Open NINA's **Image** panel. In Setup, choose **Edit ROI**, edit the yellow box directly in Image, then use **Done** in Live Focus. Zoom, scroll, rotation and flip keep the ROI in sensor coordinates. With Image closed, use the temporary local editor. **Auto ROI** is an alternative near the target star. Enable Bahtinov overlay here when using a mask.
 3. Fold Setup, open NINA's **Image** panel, set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR. Open NINA's **HFR History** panel to see live ROI measurements automatically. Movement Stop and target-move cancellation remain available with Setup folded.
 4. Adjust Stretch if the preview is too bright. Stop preview before changing exposure or ROI.
@@ -91,9 +91,9 @@ The star picker uses NINA's existing bright-star catalogue. Increasing the magni
 
 ## Target search
 
-**Setup → Go to target** shares one search box, target list and movement controls across three categories. Setup remains folded by default to preserve image space. [Target picker layout, rendered with synthetic data](docs/live-focus-target-search.png).
+**Setup → Go to target** shares a target list and movement controls across three categories. The category row shows **Alt / Mag** for Stars and a **name/ID search** box for Deep sky or Solar system. Setup remains folded by default to preserve image space. [Target picker layout, rendered with synthetic data](docs/live-focus-target-search.png).
 
-- **Stars:** search NINA's bright-star catalogue case-insensitively, with the existing altitude/magnitude and horizon filters.
+- **Stars:** choose from NINA's bright-star catalogue using altitude/magnitude and horizon filters. There is no name search or hidden name filter; Alt and Mag sit beside the category selector.
 - **Deep sky:** search NINA's local Sky Atlas catalogue by common name or M/NGC/IC identifier; spaces and leading zeroes in these IDs are accepted. Catalogue aliases are searched; results show a matching name, current altitude and available magnitude. Up to 100 catalogue matches are shown; refine the search when the limit is reached. Star altitude/magnitude filters do not apply.
 - **Solar system:** list the Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus and Neptune. English and Korean names are searchable. Calculate topocentric coordinates using NINA's NOVAS/JPL ephemeris, UTC converted to terrestrial time with SOFA, and the profile latitude/longitude/elevation. Recalculate after guider preparation, immediately before slewing. **Slew + Center** is disabled for these targets: stellar plate solving centers a coordinate field, not the visible lunar or planetary disk. The plugin does not change the mount's tracking rate.
 

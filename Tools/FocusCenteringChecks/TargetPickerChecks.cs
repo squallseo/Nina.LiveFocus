@@ -113,8 +113,8 @@ internal static class TargetPickerChecks
             Task<int> Pending() => (Task<int>)typeof(LiveFocusDockableVM).GetField("pendingTargetSearch", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(vm);
             Task<int> Move(bool centerTarget) => (Task<int>)typeof(LiveFocusDockableVM).GetMethod(centerTarget ? "GotoFocusTargetAsync" : "SlewFocusTargetAsync", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(vm, null);
             check(await vm.RefreshFocusTargetsAsync() == 1 && vm.FocusTargets.Single().Name == "Bright", "Stars retain both brightness and altitude filtering");
-            vm.FocusTargetQuery = "bRiGhT"; await Pending();
-            check(vm.FocusTargets.Single().Name == "Bright", "Star name search is case-insensitive");
+            vm.FocusTargetQuery = "no matching name"; await Pending();
+            check(vm.FocusTargetQuery == "" && vm.FocusTargets.Single().Name == "Bright", "Stars use altitude and magnitude without a hidden name-search filter");
             vm.SelectedTargetKind = FocusTargetKind.DeepSky; await Pending();
             check(vm.FocusTargetQuery == "" && vm.FocusTargets.Count == 3 && !vm.IsStarTargetCategory,
                 "Category changes clear stale search text; faint/unknown-magnitude and low DSO targets remain findable");
@@ -202,7 +202,7 @@ internal static class TargetPickerChecks
             var card = (FrameworkElement)view.FindName("StarSetupCard");
             var categoryBounds = category.TransformToAncestor(card).TransformBounds(new Rect(category.RenderSize));
             var searchBounds = search.TransformToAncestor(card).TransformBounds(new Rect(search.RenderSize));
-            check(category.Items.Count == 3 && category.ActualWidth >= 100 && search.ActualWidth >= 100 &&
+            check(category.Items.Count == 3 && category.ActualWidth >= 96 && search.ActualWidth >= 100 &&
                 categoryBounds.Right <= searchBounds.Left && searchBounds.Right <= card.ActualWidth,
                 "Category and search controls fit without overlap at width " + width);
             check(((TextBox)view.FindName("MaximumMagnitudeInput")).IsVisible == false &&
@@ -221,8 +221,9 @@ internal static class TargetPickerChecks
             await ((Task<int>)typeof(LiveFocusDockableVM).GetField("pendingTargetSearch", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(vm));
             view.Dispatcher.Invoke(() => {}, DispatcherPriority.DataBind); view.UpdateLayout();
             var filters = (FrameworkElement)((FrameworkElement)((TextBox)view.FindName("MaximumMagnitudeInput")).Parent).Parent;
-            check(vm.SelectedTargetKind == kind && filters.Visibility == (kind == FocusTargetKind.Stars ? Visibility.Visible : Visibility.Collapsed),
-                kind + " category selection updates bindings and star filter visibility");
+            check(vm.SelectedTargetKind == kind && filters.Visibility == (kind == FocusTargetKind.Stars ? Visibility.Visible : Visibility.Collapsed) &&
+                ((FrameworkElement)view.FindName("TargetSearchPanel")).Visibility == (kind == FocusTargetKind.Stars ? Visibility.Collapsed : Visibility.Visible),
+                kind + " category switches the same criteria area between Alt/Mag and name search");
         }
         input.Text = "M31";
         await ((Task<int>)typeof(LiveFocusDockableVM).GetField("pendingTargetSearch", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(vm));
