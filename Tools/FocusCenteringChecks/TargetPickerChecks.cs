@@ -159,8 +159,15 @@ internal static class TargetPickerChecks
             check(!vm.CanEditTargets && vm.SelectedTargetKind == FocusTargetKind.SolarSystem && vm.FocusTargetQuery == "달" && vm.SelectedFocusTarget.SolarBody == NOVAS.Body.Moon,
                 "An active GOTO locks category, query and selected target");
             finishStop.SetResult(true);
-            check(await move == 1 && centers == 1 && Math.Abs((movedTo - oldPosition).Distance.ArcSeconds) > 20 &&
-                Math.Abs((movedTo - FocusTargetPlanner.At(moon, 60, 0, 100, utc).Coordinates).Distance.ArcSeconds) < .01,
+            int moveResult = await move;
+            double oldPositionDistance = Math.Abs((movedTo - oldPosition).Distance.ArcSeconds);
+            var refreshedPosition = FocusTargetPlanner.At(moon, 60, 0, 100, utc).Coordinates;
+            // The host's angular-distance calculation can return NaN for identical
+            // coordinates due to floating-point rounding. Compare RA/Dec directly.
+            double raDifference = Math.Abs(movedTo.RA - refreshedPosition.RA);
+            raDifference = Math.Min(raDifference, 24 - raDifference) * 15 * 3600;
+            double decDifference = Math.Abs(movedTo.Dec - refreshedPosition.Dec) * 3600;
+            check(moveResult == 1 && centers == 1 && oldPositionDistance > 20 && raDifference < .01 && decDifference < .01,
                 "Moon Slew recalculates coordinates after guiding stops, immediately before movement");
             check(vm.CanEditTargets && owner == null && reservations == 2, "Target editing and capture ownership recover after the slew");
             guiderInfo.Connected = false;
