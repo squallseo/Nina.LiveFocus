@@ -17,13 +17,13 @@ using NINA.WPF.Base.Interfaces.Mediator;
 
 internal static class LiveMoveChecks {
     private static TaskCompletionSource<T> Signal<T>()=>new(TaskCreationOptions.RunContinuationsAsynchronously);
-    public static void Run(Action<bool,string> check,bool nativeAsi=false) {
+    public static void Run(Action<bool,string> check,bool nativeAsi=false,bool inspector=false) {
         Exception failure=null;
-        var thread=new Thread(()=> {try{RunAsync(check,nativeAsi).GetAwaiter().GetResult();}catch(Exception e){failure=e;}});
+        var thread=new Thread(()=> {try{RunAsync(check,nativeAsi,inspector).GetAwaiter().GetResult();}catch(Exception e){failure=e;}});
         thread.SetApartmentState(ApartmentState.STA);thread.Start();thread.Join();
         if(failure!=null)throw new Exception("Live movement integration failed",failure);
     }
-    private static async Task RunAsync(Action<bool,string> check,bool nativeAsi) {
+    private static async Task RunAsync(Action<bool,string> check,bool nativeAsi,bool inspector) {
         Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory,"Database","Migration"));
         var profile=Fake.Of<IProfile>((m,a)=>m.Name=="get_TelescopeSettings"?Fake.Properties<ITelescopeSettings>(new(){["NoSync"]=true}):Fake.Unexpected(m));
         var profiles=Fake.Of<IProfileService>((m,a)=>m.Name=="get_ActiveProfile"?profile:
@@ -54,12 +54,16 @@ internal static class LiveMoveChecks {
             "GetDevice"=>nativeCamera,
             "GetInfo"=>cameraInfo,"IsFreeToCapture"=>owner==null || owner==a[0],
             "RegisterCaptureBlock"=>Block(a[0]),"ReleaseCaptureBlock"=>Release(a[0]),
-            "LiveView"=>Stream((CancellationToken)a[1]),
+            "LiveView"=>Stream((CaptureSequence)a[0],(CancellationToken)a[1]),
             "SetReadoutMode" or "SetBinning" or "SetSubSambleRectangle" or "RegisterConsumer" or "RemoveConsumer"=>null,
             _=>Fake.Unexpected(m)});
         object Block(object value){check(owner==null,"Live preview holds a single camera reservation");owner=value;return null;}
         object Release(object value){check(owner==value,"Cleanup releases only its own reservation");owner=null;releases++;return null;}
-        IAsyncEnumerable<IExposureData> Stream(CancellationToken token){starts++;return HostStream(token);}
+        IAsyncEnumerable<IExposureData> Stream(CaptureSequence sequence,CancellationToken token){
+            if(inspector)check(sequence.SubSambleRectangle.X==0 && sequence.SubSambleRectangle.Y==0 && sequence.SubSambleRectangle.Width==128 && sequence.SubSambleRectangle.Height==128,
+                "Inspector acquires the entire sensor instead of its saved single-star ROI");
+            starts++;return HostStream(token);
+        }
         async Task<int> Move(int relative,CancellationToken token) {
             check(owner==vm && vm.IsMoving && starts>0 && closes==0,"Motor starts with the existing stream and camera reservation intact");
             moves++;moveStarted.TrySetResult(true);
@@ -76,7 +80,9 @@ internal static class LiveMoveChecks {
             "GetInfo"=>new GuiderInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var wheel=Fake.Of<IFilterWheelMediator>((m,a)=>m.Name is "RegisterConsumer" or "RemoveConsumer"?null:Fake.Unexpected(m));
         object Display(BitmapSource bitmap) {
-            if(!bitmap.IsFrozen || bitmap.PixelWidth!=128 || bitmap.PixelHeight!=128 || owner!=vm)
+            var plan=Cwseo.NINA.LiveFocus.Models.FocusAberrationMosaic.Plan(128,128);
+            if(!bitmap.IsFrozen || bitmap.PixelWidth!=(inspector?plan.Width:128) || bitmap.PixelHeight!=(inspector?plan.Height:128) ||
+                inspector && bitmap.Format!=System.Windows.Media.PixelFormats.Pbgra32 || owner!=vm)
                 throw new Exception("Main Image must receive a frozen ROI while Live Focus owns capture");
             Interlocked.Increment(ref imageWrites);
             if(vm.IsMoving)Interlocked.Increment(ref movingImageWrites);
@@ -94,6 +100,7 @@ internal static class LiveMoveChecks {
                 typeof(LiveFocusDockableVM).GetProperty(nameof(vm.CameraInfo)).SetValue(vm,cameraInfo);
                 typeof(LiveFocusDockableVM).GetProperty(nameof(vm.FocuserInfo)).SetValue(vm,focuserInfo);
                 vm.UserStep=600;
+                if(inspector){vm.PreviewRoiWidth=32;vm.PreviewRoiHeight=32;vm.PreviewRoiPreset="Inspector";}
                 vm.ShowInNinaImage=true;
                 vm.PropertyChanged+=(_,e)=> {
                     if(e.PropertyName!=nameof(vm.FocusPreviewImage))return;

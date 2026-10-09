@@ -150,9 +150,13 @@ internal static partial class PreviewDisplayChecks
         vm.StopFocusPreviewCommand.Execute(null);
         check(plot.Series.SequenceEqual(originalSeries) && plot.Axes.SequenceEqual(originalAxes), "Requesting Stop restores native history immediately while the camera drains");
         typeof(LiveFocusDockableVM).GetField("isStoppingFocusPreview",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(vm,false);
+        LiveState(vm,false); vm.PreviewRoiPreset="Inspector";
         LiveState(vm,true);AttachHistory(vm,root);
+        check(((LineSeries)plot.Series.Single()).Title=="Live Focus HFR (sensor center)",
+            "Inspector native HFR History identifies the sensor center instead of implying nine-tile statistics");
         var foreign=new LineSeries {Title="Other extension"};plot.Series.Add(foreign);
         LiveState(vm,false);
+        vm.PreviewRoiPreset="512";
         check(originalSeries.All(s=>plot.Series.Contains(s)) && plot.Series.Contains(foreign) && plot.Series.Count==originalSeries.Length+1,
             "Stopping preserves unrelated graph contributions added by another extension");
         plot.Series.Remove(foreign); AddNativeCapture(history,2);await Layout();

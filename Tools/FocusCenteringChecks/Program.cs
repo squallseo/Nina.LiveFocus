@@ -22,7 +22,7 @@ async Task Reject<T>(Func<Task> action, string description) where T : Exception 
     try { await action(); } catch (T) { rejected = true; }
     Check(rejected, description);
 }
-if(args.Contains("--live-move")){LiveMoveChecks.Run(Check,args.Contains("--asi"));Console.WriteLine($"{passed} live movement checks passed; no hardware operated.");return;}
+if(args.Contains("--live-move")){LiveMoveChecks.Run(Check,args.Contains("--asi"),args.Contains("--inspector"));Console.WriteLine($"{passed} live movement checks passed; no hardware operated.");return;}
 if(args.Contains("--auto-roi")){AutoRoiVmChecks.Run(Check);Console.WriteLine($"{passed} explicit ROI checks passed; no hardware operated.");return;}
 if(args.Contains("--preview-display")){PreviewDisplayChecks.Run(Check);Console.WriteLine($"{passed} preview display checks passed; no hardware operated.");return;}
 if(args.Contains("--focuser")){FocuserChecks.Run(Check);Console.WriteLine($"{passed} manual focuser checks passed; no hardware operated.");return;}

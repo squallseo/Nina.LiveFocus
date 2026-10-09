@@ -77,8 +77,10 @@ internal static class AutoRoiVmChecks {
                 Task<int> Invoke(string name,params object[] args)=>(Task<int>)typeof(LiveFocusDockableVM).GetMethod(name,BindingFlags.Instance|BindingFlags.NonPublic).Invoke(vm,args);
                 async Task<bool> Reject(string name,params object[] args){try{await Invoke(name,args);return false;}catch(InvalidOperationException){return true;}}
                 vm.PreviewCenterX=25;vm.PreviewCenterY=75;
+                vm.PreviewRoiPreset="Inspector";
                 check(await Invoke("SelectAutoRoiAsync")==1 && captures==1 && moves==0,"Auto ROI button selects from one scout exposure without starting focus/motor motion");
                 var selected=vm.PreviewRoiRectangle;
+                check(!vm.IsAberrationInspector && vm.CanUseBahtinovOverlay,"Successful Auto ROI leaves Inspector and restores single-star ROI controls");
                 check(selected.Width>=128 && selected.Height>=128 && Math.Abs(selected.X+selected.Width/2.0-1132)<=2 && Math.Abs(selected.Y+selected.Height/2.0-2322)<=2,
                     "Automatic local selection applies the actual sensor coordinates and shared crop size");
                 check(vm.FocusPreviewImage!=null && !vm.IsSelectingRoi && owner==null && vm.CanConfigureLive,

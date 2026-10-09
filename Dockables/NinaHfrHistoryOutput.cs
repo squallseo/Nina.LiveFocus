@@ -88,7 +88,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 };
                 liveSeries = new LineSeries
                 {
-                    Title = "Live Focus HFR (ROI)", XAxisKey = timeAxis.Key, YAxisKey = hfrAxis.Key,
+                    Title = vm.IsAberrationInspector ? "Live Focus HFR (sensor center)" : "Live Focus HFR (ROI)", XAxisKey = timeAxis.Key, YAxisKey = hfrAxis.Key,
                     DataFieldX = "X", DataFieldY = "Y", ItemsSource = vm.LiveGraphPoints,
                     Color = Color.FromRgb(255, 213, 79), MarkerFill = Color.FromRgb(255, 213, 79),
                     StrokeThickness = 1.5, MarkerType = MarkerType.Circle, MarkerSize = 2

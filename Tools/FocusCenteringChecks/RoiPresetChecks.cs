@@ -16,10 +16,17 @@ internal static partial class PreviewDisplayChecks
         void Choose(string preset) { combo.SelectedValue=preset;Bind(); }
         vm.UpdateDeviceInfo(new CameraInfo());Bind();
         var percentages=combo.Items.Cast<ComboBoxItem>().Where(i=>i.Tag.ToString().EndsWith("%")).ToArray();
+        var inspector=combo.Items.Cast<ComboBoxItem>().Single(i=>Equals(i.Tag,"Inspector"));
+        check(!inspector.IsEnabled,"Inspector selection is disabled while sensor dimensions are unknown");
         check(percentages.Length==3 && percentages.All(i=>!i.IsEnabled),
             "Sensor-percentage choices stay disabled until sensor dimensions are known");
         vm.UpdateDeviceInfo(new CameraInfo {Connected=true,DeviceId="QHY600M-ROI.Test",XSize=9576,YSize=6388});Bind();
         check(percentages.All(i=>i.IsEnabled),"Connecting a sensor enables the percentage choices through their real bindings");
+        typeof(LiveFocusDockableVM).GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,true);
+        Choose("Inspector");
+        var overlay=Children(view).OfType<System.Windows.Controls.Primitives.ToggleButton>().Single(t=>Equals(t.Content,"Bahtinov overlay"));
+        check(inspector.IsEnabled && vm.IsAberrationInspector && !vm.IsSelectingRoi && !overlay.IsEnabled && Equals(combo.SelectedValue,"Inspector"),
+            "The actual Inspector dropdown ends ROI editing and disables the single-star overlay through its binding");
         vm.PreviewCenterX=60;vm.PreviewCenterY=40;
         Choose("50%");var half=vm.PreviewRoiRectangle;
         check(half.Width==4788 && half.Height==3192 && vm.PreviewRoiPreset=="50%" && Equals(combo.SelectedValue,"50%"),

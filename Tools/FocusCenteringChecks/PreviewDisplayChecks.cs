@@ -56,6 +56,7 @@ internal static partial class PreviewDisplayChecks {
         using var vm=new LiveFocusDockableVM(profiles,camera,imaging,wheel,motor,mount,guider,null,null,null,status);
         LiveHistoryChecks.Run(check);
         await VerifyRawPreview(vm,check);
+        await VerifyInspectorDisplay(vm,()=>mainImage,check);
         const int n=256;var random=new Random(9123);double angle=37*Math.PI/180;
         var raw=Enumerable.Range(0,n*n).Select(i=>{
             double x=i%n-128,y=i/n-128,s=x*Math.Cos(angle)+y*Math.Sin(angle),u=-x*Math.Sin(angle)+y*Math.Cos(angle);

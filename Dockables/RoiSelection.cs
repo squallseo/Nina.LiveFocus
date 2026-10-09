@@ -20,6 +20,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         {
             get
             {
+                if (IsAberrationInspector) return "Inspector";
                 if (HasRoiSensorDimensions)
                     foreach (int percentage in sensorRoiPercentages)
                         if (SensorRoiSize(percentage) == (previewRoiWidth, previewRoiHeight)) return percentage + "%";
@@ -29,6 +30,12 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             set
             {
                 if (!CanConfigureLive) return;
+                if (value == "Inspector")
+                {
+                    if (HasRoiSensorDimensions && SetAberrationInspector(true))
+                    { IsSelectingRoi = false; ResetSharedFocusMeasurements(); UpdateRoiSelection(); }
+                    return;
+                }
                 int width, height;
                 if (value?.EndsWith("%", StringComparison.Ordinal) == true)
                 {
@@ -42,7 +49,8 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                     height = Math.Min(size, HasRoiSensorDimensions ? SelectionSensorHeight : size);
                 }
                 else return;
-                if ((previewRoiWidth, previewRoiHeight) == (width, height)) return;
+                bool modeChanged = SetAberrationInspector(false);
+                if ((previewRoiWidth, previewRoiHeight) == (width, height) && !modeChanged) return;
                 // Commit both dimensions together: intermediate square crops can
                 // otherwise reset the bound preset and render the overview twice.
                 previewRoiWidth = width; previewRoiHeight = height;
@@ -57,7 +65,9 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public int SelectionSensorWidth => overviewSensorWidth > 0 ? overviewSensorWidth : CameraInfo?.XSize ?? 0;
         public int SelectionSensorHeight => overviewSensorHeight > 0 ? overviewSensorHeight : CameraInfo?.YSize ?? 0;
         public FocusRoi.Rectangle PreviewRoiRectangle => SelectionSensorWidth >= 32 && SelectionSensorHeight >= 32
-            ? FocusCameraSupport.FitRoi(CameraInfo?.DeviceId, SelectionSensorWidth, SelectionSensorHeight, PreviewRoiWidth, PreviewRoiHeight, PreviewCenterX, PreviewCenterY) : default;
+            ? FocusCameraSupport.FitRoi(CameraInfo?.DeviceId, SelectionSensorWidth, SelectionSensorHeight,
+                IsAberrationInspector ? SelectionSensorWidth : PreviewRoiWidth, IsAberrationInspector ? SelectionSensorHeight : PreviewRoiHeight,
+                IsAberrationInspector ? 50 : PreviewCenterX, IsAberrationInspector ? 50 : PreviewCenterY) : default;
         public ImageSource RoiSelectionPreview { get; private set; }
         public ICommand SetRoiSizeCommand { get; private set; }
         public ICommand ConfirmRoiCommand { get; private set; }
@@ -132,6 +142,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                     overviewPixels = null; overviewImage = null; overviewWidth = overviewHeight = overviewSensorWidth = overviewSensorHeight = 0;
                 }
                 previewRoiWidth = applied.Roi.Width; previewRoiHeight = applied.Roi.Height;
+                SetAberrationInspector(false);
                 previewX = 100.0 * (applied.Roi.X + applied.Roi.Width / 2.0) / settings.SensorWidth;
                 previewY = 100.0 * (applied.Roi.Y + applied.Roi.Height / 2.0) / settings.SensorHeight;
                 ResetSharedFocusMeasurements(); IsSelectingRoi = false;
@@ -174,7 +185,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         private void UpdateRoiSelection()
         {
             RaisePropertyChanged(nameof(RoiLocationText)); RaisePropertyChanged(nameof(PreviewRoiRectangle));
-            if (overviewPixels == null || overviewWidth < 1) return;
+            if (IsAberrationInspector || overviewPixels == null || overviewWidth < 1) return;
             var roi = PreviewRoiRectangle;
             int x = Math.Clamp((int)((double)roi.X / SelectionSensorWidth * overviewWidth), 0, overviewWidth - 1);
             int y = Math.Clamp((int)((double)roi.Y / SelectionSensorHeight * overviewHeight), 0, overviewHeight - 1);

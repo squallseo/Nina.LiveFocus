@@ -31,13 +31,16 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public AsyncObservableCollection<OxyPlot.DataPoint> LiveHfrPoints { get; } = new();
         public OxyPlot.DataPoint[] LiveStarProfile { get; private set; } = Array.Empty<OxyPlot.DataPoint>();
         public double LiveHfr { get; private set; } = double.NaN;
-        public string LiveHfrText => double.IsFinite(LiveHfr) ? $"Local HFR: {LiveHfr:F2} px" : "Local HFR: no star detected";
+        public string LiveHfrText => (IsAberrationInspector ? "Center HFR: " : "Local HFR: ") +
+            (double.IsFinite(LiveHfr) ? $"{LiveHfr:F2} px" : "no star detected");
         public string LiveTimingText { get; private set; } = "Timing will appear after the first live frame.";
         private ImageSource overviewImage;
         private bool isSelectingRoi;
         public bool IsSelectingRoi { get => isSelectingRoi; private set { isSelectingRoi = value; RaisePropertyChanged(); RaisePropertyChanged(nameof(LiveDisplayImage)); RaisePropertyChanged(nameof(RoiLocationText)); UpdateNinaHfrHistory(); UpdateMainRoiEditor(); } }
         public ImageSource LiveDisplayImage => IsSelectingRoi ? overviewImage : FocusPreviewImage;
-        public string RoiLocationText => $"{(IsSelectingRoi ? "Full frame: click a star or drag a rectangle. " : "")}ROI {PreviewRoiRectangle.Width}×{PreviewRoiRectangle.Height} px | X {PreviewCenterX:F1}%, Y {PreviewCenterY:F1}% | HFR: central 256 px";
+        public string RoiLocationText => IsAberrationInspector
+            ? $"Inspector 3×3 | full sensor {SelectionSensorWidth}×{SelectionSensorHeight} px | 9 unscaled tiles up to 512 px | HFR: sensor center 256 px"
+            : $"{(IsSelectingRoi ? "Full frame: click a star or drag a rectangle. " : "")}ROI {PreviewRoiRectangle.Width}×{PreviewRoiRectangle.Height} px | X {PreviewCenterX:F1}%, Y {PreviewCenterY:F1}% | HFR: central 256 px";
         public ICommand SelectRoiCommand { get; private set; }
         public ICommand RefreshRoiImageCommand { get; private set; }
         public ICommand ClearLiveGraphCommand { get; private set; }
@@ -116,6 +119,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 overviewSensorWidth = cached?.Properties.Width ?? DataModel.LastPreviewTiming.SourceWidth;
                 overviewSensorHeight = cached?.Properties.Height ?? DataModel.LastPreviewTiming.SourceHeight;
                 RaisePropertyChanged(nameof(HasRoiSensorDimensions)); RaisePropertyChanged(nameof(PreviewRoiPreset));
+                SetAberrationInspector(false);
                 IsSelectingRoi = true;
                 UpdateRoiSelection();
                 RaisePropertyChanged(nameof(LiveDisplayImage)); RaisePropertyChanged(nameof(RoiLocationText));
@@ -192,8 +196,9 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 if (Properties.Settings.Default.EnableFocusDiagnostics) Logger.Info("[LiveFocus/Diagnostics] " + diagnostics.DirectoryPath);
                 int frames = 0;
                 bool streaming = UseFocusStreaming && DataModel.SupportsFocusStreaming;
-                double requestedExposureMs = PreviewExposureMs, centerX = PreviewCenterX, centerY = PreviewCenterY;
-                int roiWidth = PreviewRoiWidth, roiHeight = PreviewRoiHeight;
+                bool inspector = IsAberrationInspector;
+                double requestedExposureMs = PreviewExposureMs, centerX = inspector ? 50 : PreviewCenterX, centerY = inspector ? 50 : PreviewCenterY;
+                int roiWidth = inspector ? CameraInfo.XSize : PreviewRoiWidth, roiHeight = inspector ? CameraInfo.YSize : PreviewRoiHeight;
                 string cameraId = CameraInfo.DeviceId, focuserId = FocuserInfo?.DeviceId;
                 SetAssistStatus(streaming ? "Starting camera stream..." : "Starting single-frame preview...");
                 if (Properties.Settings.Default.EnableFocusDiagnostics) Logger.Info($"[LiveFocus/LiveStream] starting mode={(streaming ? "stream" : "single")} readMode={CameraInfo?.ReadoutMode} exposureMs={requestedExposureMs} roiCenter={centerX},{centerY}");
@@ -230,11 +235,12 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                     }
                     else
                     {
-                        frame = await DataModel.CaptureFocusPreviewAsync(requestedExposureMs / 1000, roiWidth, centerX, centerY, assistCts.Token, roiHeight: roiHeight);
+                        frame = await DataModel.CaptureFocusPreviewAsync(requestedExposureMs / 1000, roiWidth, centerX, centerY, assistCts.Token, roiHeight: roiHeight, retainRawPixels: inspector);
+                        rawFrame = DataModel.TakePreviewRawFrame();
                         timing = DataModel.LastPreviewTiming;
                     }
                     var processingTimer = Stopwatch.StartNew();
-                    bool mask = AnalyzeBahtinov;
+                    bool mask = AnalyzeBahtinov && !inspector;
                     if (rawFrame != null && (mask || diagnostics.IsEnabled)) frame.Pixels = await Task.Run(() => rawFrame.ToDoubles(assistCts.Token), assistCts.Token);
                     var measurement = mask ? await Task.Run(() => BahtinovAnalyzer.Analyze(frame.Pixels, frame.Width, frame.Height), assistCts.Token) : null;
                     var analysisFrame = rawFrame != null ? rawFrame.CenterWindow() : FocusRoi.CenterWindow(frame.Pixels, frame.Width, frame.Height);
@@ -264,7 +270,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                     assistCts.Token.ThrowIfCancellationRequested();
                     double analysisMs = processingTimer.Elapsed.TotalMilliseconds;
                     processingTimer.Restart();
-                    FocusPreviewImage = await Task.Run(() => rawFrame != null
+                    FocusPreviewImage = await Task.Run(() => inspector ? RenderAberrationPreview(rawFrame) : rawFrame != null
                         ? RenderRawFocusPreview(rawFrame, measurement)
                         : RenderFocusPreview(frame.Pixels, frame.Width, frame.Height, measurement), assistCts.Token);
                     assistCts.Token.ThrowIfCancellationRequested();

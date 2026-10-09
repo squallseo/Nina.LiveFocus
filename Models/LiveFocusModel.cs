@@ -18,6 +18,11 @@ namespace Cwseo.NINA.LiveFocus.Models
         public PreviewTiming LastPreviewTiming { get; private set; }
         public int LastPreviewBitDepth { get; private set; } = 16;
         public bool LastPreviewIsBayered { get; private set; }
+        public FocusRawFrame LastPreviewRawFrame { get; private set; }
+        internal FocusRawFrame TakePreviewRawFrame()
+        {
+            var frame = LastPreviewRawFrame; LastPreviewRawFrame = null; return frame;
+        }
         public LiveFocusModel(IProfileService profiles, IImagingMediator imaging, ICameraMediator camera)
         {
             imagingMediator = imaging; cameraMediator = camera;
@@ -28,8 +33,9 @@ namespace Cwseo.NINA.LiveFocus.Models
             public void Report(ApplicationStatus value) { }
         }
         public async Task<(double[] Pixels, int Width, int Height, bool HardwareRoi)> CaptureFocusPreviewAsync(
-            double seconds, int roiSize, double centerXPercent, double centerYPercent, CancellationToken token, bool overview = false, int? roiHeight = null)
+            double seconds, int roiSize, double centerXPercent, double centerYPercent, CancellationToken token, bool overview = false, int? roiHeight = null, bool retainRawPixels = false)
         {
+            LastPreviewRawFrame = null;
             var camera = cameraMediator.GetInfo();
             if (camera?.Connected != true) throw new InvalidOperationException("Camera is disconnected.");
             token.ThrowIfCancellationRequested();
@@ -84,6 +90,12 @@ namespace Cwseo.NINA.LiveFocus.Models
             int left = hardwareRoi ? 0 : Math.Clamp(x, 0, Math.Max(0, width - size));
             int top = hardwareRoi ? 0 : Math.Clamp(y, 0, Math.Max(0, height - sizeY));
             int cropWidth = Math.Min(size, width), cropHeight = Math.Min(sizeY, height);
+            if (retainRawPixels)
+            {
+                LastPreviewRawFrame = new FocusRawFrame(raw, width, left, top, cropWidth, cropHeight);
+                LastPreviewTiming = new(captureMs, hostDownloadMs, conversionMs, timer.Elapsed.TotalMilliseconds, width, height);
+                return (null, cropWidth, cropHeight, hardwareRoi);
+            }
             var pixels = new double[cropWidth * cropHeight];
             for (int row = 0; row < cropHeight; row++)
             {
