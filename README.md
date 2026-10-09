@@ -38,17 +38,19 @@ dotnet build LiveFocus.csproj -c Release
 
 Output: `bin\Release\net8.0-windows\Cwseo.NINA.LiveFocus.dll`.
 
-Close NINA, then run:
+To deploy the build, run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\InstallPlugin.ps1
 ```
 
-The script builds Release and copies this plugin DLL and license to:
+The script builds Release and verifies the copied DLL hash. With NINA closed, it copies the DLL and license to:
 
 ```text
 %LOCALAPPDATA%\NINA\Plugins\3.0.0\Live Focus\
 ```
+
+If NINA is running, it stages the update under `%LOCALAPPDATA%\NINA\PluginStaging\3.0.0\Live Focus\`; restart NINA to apply it. Staging is also refreshed when deploying with NINA closed so an older pending update cannot overwrite the new build. Use `-SkipBuild` to deploy the existing Release output.
 
 NINA supplies its own libraries; do not copy every dependency from the build directory into the plugin folder. Reopen NINA and add the **Live Focus** dockable panel. Its separate DLL, plugin ID and settings namespace allow coexistence with Manual Focuser.
 
