@@ -70,7 +70,7 @@ internal static partial class PreviewDisplayChecks {
             "Background preview updates are marshalled to the host UI thread");
         type.GetField("lastImageOutput",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(vm,0L);
         Task.Run(()=>source.SetValue(vm,preview)).GetAwaiter().GetResult();
-        before=output().Count;vm.Dispose();await Dispatcher.Yield(DispatcherPriority.Background);
+        before=output().Count;await VerifyGraphVmDisposal(vm,check);await Dispatcher.Yield(DispatcherPriority.Background);
         check(output().Count==before,"Disposal prevents queued Image output after the plugin closes");
     }
 }

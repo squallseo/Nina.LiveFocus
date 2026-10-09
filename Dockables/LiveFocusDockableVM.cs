@@ -143,7 +143,11 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public void Dispose()
         {
             if (disposed) return; disposed = true; stretchRefresh?.Cancel(); assistCts?.Cancel(); moveCts?.Cancel(); gotoCts?.Cancel(); StopObservingPreparedImages();
-            ApplyOnUiThread(StopMainRoiEditor);
+            // Disposal already sets disposed: bypass the update guard for UI cleanup.
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            void CleanViews() { StopMainRoiEditor(); StopMainImageGraphs(); }
+            if (dispatcher == null || dispatcher.CheckAccess()) CleanViews();
+            else dispatcher.BeginInvoke(new Action(CleanViews));
             try { cameraMediator.RemoveConsumer(this); } catch (Exception e) { Logger.Error("Live Focus camera consumer cleanup failed", e); }
             try { focuserMediator.RemoveConsumer(this); } catch (Exception e) { Logger.Error("Live Focus focuser consumer cleanup failed", e); }
             try { telescopeMediator.RemoveConsumer(this); } catch (Exception e) { Logger.Error("Live Focus telescope consumer cleanup failed", e); }

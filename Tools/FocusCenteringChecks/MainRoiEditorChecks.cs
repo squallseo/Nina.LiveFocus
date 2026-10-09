@@ -37,7 +37,7 @@ internal static partial class PreviewDisplayChecks {
         check((bool)Call(editor,"TryAttach",root) && vm.IsEditingRoiInNinaImage,
             "ROI editor attaches to the real NINA ImageView using its public WPF visuals");
         var controls=new LiveFocusDockableView {DataContext=vm};
-        ((System.Windows.Controls.Primitives.ToggleButton)controls.FindName("MeasurementsToggle")).IsChecked=true;
+        vm.ShowLiveGraphs=true;
         controls.Measure(new Size(350,500));controls.Arrange(new Rect(0,0,350,500));controls.UpdateLayout();
         check(((FrameworkElement)controls.FindName("PreviewWorkspace")).Visibility==Visibility.Collapsed &&
             Visuals(controls).OfType<Button>().Any(b=>Equals(b.Content,"Done") && b.Visibility==Visibility.Visible && b.ActualHeight>=28),
@@ -93,8 +93,8 @@ internal static partial class PreviewDisplayChecks {
         Selecting(false);await Layout();
         check(Editor()==null && !vm.IsEditingRoiInNinaImage && AdornerLayer.GetAdornerLayer(overlay.AdornedElement).GetAdorners(overlay.AdornedElement)==null,
             "Done removes the host overlay and releases the editor");
-        check(((FrameworkElement)controls.FindName("MeasurementsPanel")).Visibility==Visibility.Visible,
-            "Done restores the user's graph choice without reopening a duplicate image");
+        check(((FrameworkElement)controls.FindName("MeasurementsPanel")).Visibility==Visibility.Collapsed && vm.ShowLiveGraphs,
+            "Done restores the host graph choice without reopening a duplicate image");
         Selecting(true);await Layout();editor=Editor();Call(editor,"TryAttach",root);
         vm.ShowInNinaImage=false;
         check(Editor()==null && !vm.IsEditingRoiInNinaImage && vm.IsSelectingRoi,

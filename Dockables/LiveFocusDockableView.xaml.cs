@@ -137,7 +137,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             bool stacked = PreviewWorkspace.ActualWidth < 600;
             bool selecting = DataContext is LiveFocusDockableVM vm && vm.IsSelectingRoi;
             bool external = DataContext is LiveFocusDockableVM output && output.ShowInNinaImage && (!selecting || output.IsEditingRoiInNinaImage);
-            bool showMeasurements = MeasurementsToggle.IsChecked == true;
+            bool showMeasurements = !external && MeasurementsToggle.IsChecked == true;
             var layout = (stacked, selecting, showMeasurements, external);
             if (previewLayout == layout) return;
             previewLayout = layout;
@@ -157,13 +157,6 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             Grid.SetRow(MeasurementsPanel, !external && stacked ? 1 : 0);
             Grid.SetColumn(MeasurementsPanel, external || stacked ? 0 : 1);
             Grid.SetColumnSpan(MeasurementsPanel, external || stacked ? 2 : 1);
-            bool horizontalGraphs = external || stacked;
-            MeasurementsPanel.ColumnDefinitions[1].Width = horizontalGraphs ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-            MeasurementsPanel.RowDefinitions[0].Height = new GridLength(horizontalGraphs ? 1 : 2, GridUnitType.Star);
-            MeasurementsPanel.RowDefinitions[1].Height = horizontalGraphs ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-            Grid.SetRow(ProfileCard, horizontalGraphs ? 0 : 1);
-            Grid.SetColumn(ProfileCard, horizontalGraphs ? 1 : 0);
-            HfrCard.Margin = horizontalGraphs ? new Thickness(0, 0, 8, 0) : new Thickness(0, 0, 0, 8);
         }
         private void OnRoiPropertyChanged(object sender, PropertyChangedEventArgs e)
         {

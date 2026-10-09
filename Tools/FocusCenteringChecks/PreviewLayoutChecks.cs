@@ -47,7 +47,7 @@ internal static partial class PreviewDisplayChecks {
         vm.FocusTargets.Add(star);vm.SelectedFocusTarget=star;
         typeof(LiveFocusDockableVM).GetProperty(nameof(vm.LiveHfr)).SetValue(vm,2.25);
         typeof(LiveFocusDockableVM).GetProperty(nameof(vm.LiveStarProfile)).SetValue(vm,Enumerable.Range(-32,65).Select(x=>new OxyPlot.DataPoint(x,Math.Exp(-x*x/18.0))).ToArray());
-        for(int i=0;i<24;i++)vm.LiveHfrPoints.Add(new OxyPlot.DataPoint(i,2.25+2*Math.Exp(-i/5.0)+.08*Math.Sin(i)));
+        for(int i=0;i<24;i++)typeof(LiveFocusDockableVM).GetMethod("RecordLiveHfr",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(vm,new object[]{(double)i,2.25+2*Math.Exp(-i/5.0)+.08*Math.Sin(i)});
         view.DataContext=null;view.DataContext=vm;
         var setup=(Expander)view.FindName("SetupExpander");
         var preview=(FrameworkElement)view.FindName("PreviewSurface");
@@ -80,8 +80,8 @@ internal static partial class PreviewDisplayChecks {
         var compactEncoder=new PngBitmapEncoder();compactEncoder.Frames.Add(BitmapFrame.Create(compactShot));
         using(var file=File.Create("bin/live-focus-image-controls.png"))compactEncoder.Save(file);
         toggle.IsChecked=true;view.UpdateLayout();
-        check(graphs.Visibility==Visibility.Visible && ((FrameworkElement)view.FindName("PreviewCard")).Visibility==Visibility.Collapsed,
-            "Optional graphs do not restore a duplicate local image");
+        check(graphs.Visibility==Visibility.Collapsed && workspace.Visibility==Visibility.Collapsed && vm.ShowLiveGraphs,
+            "NINA Image graphs use no duplicate local workspace");
         toggle.IsChecked=false;vm.ShowInNinaImage=false;view.UpdateLayout();
         var magnitudeInput=(TextBox)view.FindName("MaximumMagnitudeInput");
         foreach(var size in new[]{(350,500),(350,700),(650,500),(650,700),(950,700)}) {
@@ -205,8 +205,8 @@ internal static partial class PreviewDisplayChecks {
         var roiEncoder=new PngBitmapEncoder();roiEncoder.Frames.Add(BitmapFrame.Create(roiShot));
         using(var file=File.Create("bin/live-focus-roi.png"))roiEncoder.Save(file);
         vmType.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,false);view.UpdateLayout();
-        check(toggle.IsChecked==true && graphs.Visibility==Visibility.Visible && ((FrameworkElement)view.FindName("PreviewCard")).Visibility==Visibility.Collapsed,
-            "Leaving ROI editing restores graphs and hides the temporary local editor in Image mode");
+        check(toggle.IsChecked==true && vm.ShowLiveGraphs && graphs.Visibility==Visibility.Collapsed && ((FrameworkElement)view.FindName("PreviewCard")).Visibility==Visibility.Collapsed,
+            "Leaving ROI editing restores host graphs and hides the temporary local editor in Image mode");
         toggle.IsChecked=false;vm.ShowInNinaImage=false;
         var exposureSlider=(Slider)view.FindName("ExposureSlider");
         vm.PreviewExposureMs=250;view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);

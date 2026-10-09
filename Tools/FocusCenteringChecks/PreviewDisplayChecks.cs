@@ -54,6 +54,7 @@ internal static partial class PreviewDisplayChecks {
             "add_ImagePrepared" or "remove_ImagePrepared"=>null,"SetImage"=>Display((BitmapSource)a[0]),_=>Fake.Unexpected(m)});
         var status=Fake.Of<IApplicationStatusMediator>((m,a)=>m.Name=="StatusUpdate"?null:Fake.Unexpected(m));
         using var vm=new LiveFocusDockableVM(profiles,camera,imaging,wheel,motor,mount,guider,null,null,null,status);
+        LiveHistoryChecks.Run(check);
         await VerifyRawPreview(vm,check);
         const int n=256;var random=new Random(9123);double angle=37*Math.PI/180;
         var raw=Enumerable.Range(0,n*n).Select(i=>{
@@ -87,6 +88,7 @@ internal static partial class PreviewDisplayChecks {
         type.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,false);
         vm.ResetPreviewStretchCommand.Execute(null);await Task.Delay(250);
         RenderControls(vm,check);
+        await VerifyMainGraphs(vm,check);
         await VerifyMainRoiEditor(vm, sink=>hostDisplay=sink, check);
         await VerifyMainImageOutput(vm,raw,()=> (mainImage,imageWrites,imageThread),check);
     }

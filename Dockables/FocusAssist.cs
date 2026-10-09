@@ -35,7 +35,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public string LiveTimingText { get; private set; } = "Timing will appear after the first live frame.";
         private ImageSource overviewImage;
         private bool isSelectingRoi;
-        public bool IsSelectingRoi { get => isSelectingRoi; private set { isSelectingRoi = value; RaisePropertyChanged(); RaisePropertyChanged(nameof(LiveDisplayImage)); RaisePropertyChanged(nameof(RoiLocationText)); UpdateMainRoiEditor(); } }
+        public bool IsSelectingRoi { get => isSelectingRoi; private set { isSelectingRoi = value; RaisePropertyChanged(); RaisePropertyChanged(nameof(LiveDisplayImage)); RaisePropertyChanged(nameof(RoiLocationText)); UpdateMainImageGraphs(); UpdateMainRoiEditor(); } }
         public ImageSource LiveDisplayImage => IsSelectingRoi ? overviewImage : FocusPreviewImage;
         public string RoiLocationText => $"{(IsSelectingRoi ? "Full frame: click a star or drag a rectangle. " : "")}ROI {PreviewRoiRectangle.Width}×{PreviewRoiRectangle.Height} px | X {PreviewCenterX:F1}%, Y {PreviewCenterY:F1}% | HFR: central 256 px";
         public ICommand SelectRoiCommand { get; private set; }
@@ -50,7 +50,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public double PreviewCenterY { get => previewY; set { if (double.IsFinite(value)) previewY = Math.Clamp(value, 0, 100); ResetSharedFocusMeasurements(); RaisePropertyChanged(); UpdateRoiSelection(); } }
         private void ResetSharedFocusMeasurements()
         {
-            LiveHfrPoints.Clear(); LiveHfr = double.NaN;
+            ClearLiveHistory(); LiveHfr = double.NaN;
             LiveStarProfile = Array.Empty<OxyPlot.DataPoint>();
             RaisePropertyChanged(nameof(LiveHfrText)); RaisePropertyChanged(nameof(LiveStarProfile));
         }
@@ -76,6 +76,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public ICommand PreviewMoveOutCommand { get; private set; }
         private void InitializeFocusAssist()
         {
+            liveHistory = new LiveHfrHistory(LiveHfrPoints);
             ResetPreviewStretchCommand = new RelayCommand(_ => PreviewStretchStrength = 1);
             InitializeRoiSelection();
             StartFocusPreviewCommand = new AsyncCommand<int>(() => RunGuarded("Focus preview", RunFocusPreviewAsync), _ => CanStartAssist());
@@ -88,7 +89,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 SetAssistStatus("Stopping; waiting for the camera...");
                 assistCts?.Cancel();
             }, _ => assistRunning && !isStoppingFocusPreview);
-            ClearLiveGraphCommand = new RelayCommand(_ => { LiveHfrPoints.Clear(); }, _ => !IsMoving);
+            ClearLiveGraphCommand = new RelayCommand(_ => ClearLiveHistory(), _ => !IsMoving);
             PreviewMoveInCommand = new RelayCommand(_ => pendingPreviewMove = -(int)Math.Clamp(Math.Abs((long)UserStep), 1, 10000),
                 _ => assistRunning && !isStoppingFocusPreview && !IsMoving && FocuserInfo?.Connected == true && pendingPreviewMove == 0);
             PreviewMoveOutCommand = new RelayCommand(_ => pendingPreviewMove = (int)Math.Clamp(Math.Abs((long)UserStep), 1, 10000),
@@ -180,7 +181,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 liveImageOutputActive = true;
                 lastImageOutput = 0;
                 RaisePropertyChanged(nameof(RoiLocationText));
-                LiveHfrPoints.Clear();
+                ClearLiveHistory();
                 var clock = Stopwatch.StartNew(); long previous = 0;
                 var diagnostics = CreateDiagnosticSession("LiveFocus");
                 long lastSaved = -5000;
@@ -267,12 +268,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                     RaisePropertyChanged(nameof(LiveDisplayImage));
                     long now = clock.ElapsedMilliseconds;
                     LiveHfr = hfr;
-                    // A single gap separates valid runs; missing frames are not measurements.
-                    if (double.IsFinite(hfr))
-                        LiveHfrPoints.Add(new OxyPlot.DataPoint(now / 1000.0, hfr));
-                    else if (LiveHfrPoints.Count > 0 && double.IsFinite(LiveHfrPoints[^1].Y))
-                        LiveHfrPoints.Add(new OxyPlot.DataPoint(now / 1000.0, double.NaN));
-                    while (LiveHfrPoints.Count > 600 || (LiveHfrPoints.Count > 1 && LiveHfrPoints[0].X < now / 1000.0 - 120)) LiveHfrPoints.RemoveAt(0);
+                    RecordLiveHfr(now / 1000.0, hfr);
                     int peak = Array.IndexOf(analysisFrame.Pixels, analysisFrame.Pixels.Max());
                     int px = peak % analysisFrame.Width, py = peak / analysisFrame.Width;
                     var profileSorted = (double[])analysisFrame.Pixels.Clone(); Array.Sort(profileSorted);

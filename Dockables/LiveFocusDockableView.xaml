@@ -79,6 +79,7 @@
           <Setter.Value>
             <ControlTemplate TargetType="Slider">
               <Grid x:Name="SliderSurface" Background="Transparent">
+                <Border x:Name="FocusOutline" BorderBrush="Transparent" BorderThickness="1" CornerRadius="4" IsHitTestVisible="False" />
                 <Track x:Name="PART_Track" VerticalAlignment="Center" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
                   <Track.DecreaseRepeatButton><RepeatButton Command="Slider.DecreaseLarge" Style="{StaticResource FocusTrackButton}" Background="{StaticResource SecondaryBrush}"/></Track.DecreaseRepeatButton>
                   <Track.IncreaseRepeatButton><RepeatButton Command="Slider.IncreaseLarge" Style="{StaticResource FocusTrackButton}" Background="{StaticResource BorderBrush}"/></Track.IncreaseRepeatButton>
@@ -91,7 +92,7 @@
               </Grid>
               <ControlTemplate.Triggers>
                 <Trigger Property="IsEnabled" Value="False"><Setter TargetName="PART_Track" Property="Opacity" Value="0.4"/></Trigger>
-                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="SliderSurface" Property="Background" Value="{StaticResource ButtonBackgroundSelectedBrush}"/></Trigger>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="FocusOutline" Property="BorderBrush" Value="{StaticResource SecondaryBrush}"/></Trigger>
               </ControlTemplate.Triggers>
             </ControlTemplate>
           </Setter.Value>
@@ -218,7 +219,7 @@
             <Button x:Name="CancelGotoButton" Content="Cancel GOTO" Command="{Binding CancelGotoCommand}" Style="{StaticResource FocusButton}" Margin="6,0,0,0" Visibility="{Binding IsGoingToFocusTarget, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Cancel the slew or plate-solve centering, even with setup folded." />
           </WrapPanel>
           <DockPanel Margin="0,6,0,0">
-            <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Graphs" Style="{StaticResource FocusSwitch}" IsChecked="False" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show HFR history and the star profile." />
+            <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Graphs" Style="{StaticResource FocusSwitch}" IsChecked="{Binding ShowLiveGraphs, Mode=TwoWay}" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show the recent 120 seconds of HFR below NINA Image." />
             <StackPanel x:Name="CameraConnectionIndicator" Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" ToolTip="{Binding LiveFrameDetails}">
               <Viewbox Width="12" Height="12" Margin="0,0,5,0">
                 <Path Stretch="Uniform">
@@ -424,59 +425,7 @@
 
         </Grid>
       </Border>
-      <Grid x:Name="MeasurementsPanel" Grid.Column="1">
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="*" />
-          <ColumnDefinition Width="0" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-          <RowDefinition Height="2*" />
-          <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <Border x:Name="HfrCard" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,0,0,8">
-          <Grid>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto" />
-              <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-            <DockPanel Margin="0,0,0,4">
-              <Button DockPanel.Dock="Right" Width="28" Padding="5" Style="{StaticResource FocusButton}" Command="{Binding ClearLiveGraphCommand}" ToolTip="Clear the local HFR history." AutomationProperties.Name="Clear live graph">
-                <Viewbox Width="13" Height="13">
-                  <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 4,0 L 10,0 L 10,2 L 14,2 L 14,4 L 0,4 L 0,2 L 4,2 Z M 2,5 L 12,5 L 11,15 L 3,15 Z" />
-                </Viewbox>
-              </Button>
-              <TextBlock Text="{Binding LiveHfrText}" FontWeight="SemiBold" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,6,0" />
-            </DockPanel>
-            <oxy:Plot x:Name="PreviewFocusPlot" Grid.Row="1" Background="{StaticResource BackgroundBrush}" PlotAreaBackground="{StaticResource BackgroundBrush}">
-              <oxy:Plot.Axes>
-                <oxy:LinearAxis Position="Bottom" Title="Elapsed seconds" FontSize="10" TitleFontSize="10" StringFormat="0.##" MinimumPadding="0.08" MaximumPadding="0.08" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" TitleColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
-                <oxy:LinearAxis Position="Left" Title="HFR (px)" FontSize="10" TitleFontSize="10" MinimumPadding="0.08" MaximumPadding="0.08" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" TitleColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
-              </oxy:Plot.Axes>
-              <oxy:Plot.Series>
-                <oxy:LineSeries ItemsSource="{Binding LiveHfrPoints}" DataFieldX="X" DataFieldY="Y" Color="{Binding Color, Source={StaticResource FocusRoiBrush}}" StrokeThickness="1.5" MarkerType="Circle" MarkerSize="2" MarkerFill="{Binding Color, Source={StaticResource FocusRoiBrush}}" />
-              </oxy:Plot.Series>
-            </oxy:Plot>
-          </Grid>
-        </Border>
-        <Border x:Name="ProfileCard" Grid.Row="1" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8">
-          <Grid>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto" />
-              <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-            <TextBlock Text="Star profile" FontWeight="SemiBold" FontSize="11" Margin="0,0,0,4" />
-            <oxy:Plot Grid.Row="1" Background="{StaticResource BackgroundBrush}" PlotAreaBackground="{StaticResource BackgroundBrush}">
-              <oxy:Plot.Axes>
-                <oxy:LinearAxis Position="Bottom" Title="Distance (px)" FontSize="10" TitleFontSize="10" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" TitleColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
-                <oxy:LinearAxis Position="Left" Minimum="0" Maximum="1.1" FontSize="10" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
-              </oxy:Plot.Axes>
-              <oxy:Plot.Series>
-                <oxy:LineSeries ItemsSource="{Binding LiveStarProfile}" DataFieldX="X" DataFieldY="Y" Color="{Binding Color, Source={StaticResource PrimaryBrush}}" />
-              </oxy:Plot.Series>
-            </oxy:Plot>
-          </Grid>
-        </Border>
-      </Grid>
+      <local:LiveFocusGraphsView x:Name="MeasurementsPanel" Grid.Column="1" />
     </Grid>
   </Grid>
 </UserControl>

@@ -8,7 +8,11 @@ A NINA plugin for moving the focuser while watching a live star image.
 
 Compact controls rendered with synthetic test data. Live frames use NINA's main **Image** panel by default; there is no duplicate image workspace in Live Focus. Exposure, In / Out steps, position, local HFR and stretch stay visible. **Setup** starts folded and contains ROI, target movement, absolute position and Bahtinov overlay controls. Only its contents scroll, leaving live controls accessible on short docks.
 
-**Graphs** starts off. Turn it on to show HFR history and the star profile in a short measurement area. ROI editing uses the main Image panel when it is visible; **Retake / Done** remain in the compact Live Focus controls. A temporary local editor is available when the main viewer is closed or **Use NINA Image** is off. Finishing restores your graph choice. To use a local preview instead of the main Image panel, turn off **Setup → Use NINA Image**.
+**Graphs** starts off. With NINA Image output enabled, it adds **only the HFR history below the main Image viewport**; Live Focus keeps no duplicate graph workspace. The footer follows the Image panel when docks move or resize, and attaches when Image becomes visible. Turning Graphs off or entering ROI editing restores the full image area. Star profile remains available with the local preview when **Setup → Use NINA Image** is off.
+
+HFR history shows a fixed **120 seconds**, with the latest frame at the right edge (**0**) and older samples to its left. Display updates are capped at 5 per second so faster cameras do not shorten the history. Brief star-detection loss leaves a break in the line. Instantaneous HFR still uses every processed frame; this graph sampling does not change the measurements. Clear and starting a new live run reset the history. [HFR footer layout, rendered with synthetic data](docs/live-focus-image-hfr.png).
+
+ROI editing uses the main Image panel when it is visible; **Retake / Done** remain in the compact Live Focus controls. A temporary local editor is available when the main viewer is closed or **Use NINA Image** is off. Finishing restores your graph choice.
 
 [Small-screen controls (350 × 180)](docs/live-focus-compact.png)
 
