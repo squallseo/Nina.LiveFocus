@@ -145,11 +145,25 @@ internal static class VmChecks {
             // The harness has no host Application, so supply the device snapshots.
             void Info(string name, object value) => typeof(LiveFocusDockableVM).GetProperty(name).SetValue(vm, value);
             Info(nameof(vm.CameraInfo), cameraInfo); Info(nameof(vm.TelescopeInfo), mountInfo); Info(nameof(vm.GuiderInfo), guiderInfo);
+            check(vm.MinimumFocusAltitude == 45 && vm.MaximumFocusMagnitude == 4, "Star filters default to 45 degrees and magnitude 4");
+            vm.MaximumFocusMagnitude = double.NaN; vm.MaximumFocusMagnitude = double.PositiveInfinity;
+            check(vm.MaximumFocusMagnitude == 4, "Non-finite magnitude input preserves the current filter");
+            vm.MaximumFocusMagnitude = -3;
+            check(vm.MaximumFocusMagnitude == -2, "Magnitude filter accepts bright negative values within its range");
+            vm.MaximumFocusMagnitude = 99;
+            check(vm.MaximumFocusMagnitude == 20, "Magnitude filter bounds excessively faint input");
+            vm.MaximumFocusMagnitude = 4;
             vm.MinimumFocusAltitude = 15;
             vm.SelectedFocusTarget = new FocusStarSuggestion { Name = "synthetic pole", Coordinates = new Coordinates(0, 89, Epoch.J2000, Coordinates.RAType.Degrees), Magnitude = 2 };
             vm.PreviewCenterX = 25; vm.PreviewCenterY = 75;
             var method = typeof(LiveFocusDockableVM).GetMethod("GotoFocusTargetAsync", BindingFlags.NonPublic | BindingFlags.Instance);
             int Goto() => ((Task<int>)method.Invoke(vm, null)).GetAwaiter().GetResult();
+            vm.MaximumFocusMagnitude = 1.9;
+            bool magnitudeRejected = false;
+            try { Goto(); } catch (InvalidOperationException e) { magnitudeRejected = e.Message.Contains("magnitude"); }
+            check(magnitudeRejected && slews == 0 && blocks == 0 && solvers == 0,
+                "Changing brightness without Refresh rejects an excluded star before any reservation or movement");
+            vm.MaximumFocusMagnitude = 4;
             void Idle() => check(owner == null && !vm.IsGoingToFocusTarget && vm.CanConfigureLive && statuses[^1] == "" && guidingStarted == null,
                 "Completion restores UI, clears progress and removes temporary guider observation");
             check(vm.GotoFocusTargetCommand.CanExecute(null), "Connected idle camera/mount enable centering GOTO");

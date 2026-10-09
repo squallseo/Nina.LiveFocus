@@ -29,6 +29,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         }
         private FocusStarSuggestion selectedFocusTarget;
         private double minimumFocusAltitude = 45;
+        private double maximumFocusMagnitude = 4;
         public AsyncObservableCollection<FocusStarSuggestion> FocusTargets { get; } = new();
         public ICommand RefreshFocusTargetsCommand { get; private set; }
         public ICommand GotoFocusTargetCommand { get; private set; }
@@ -39,6 +40,11 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         {
             get => minimumFocusAltitude;
             set { if (!double.IsFinite(value)) return; minimumFocusAltitude = Math.Clamp(value, 15, 85); RaisePropertyChanged(); }
+        }
+        public double MaximumFocusMagnitude
+        {
+            get => maximumFocusMagnitude;
+            set { if (!double.IsFinite(value)) return; maximumFocusMagnitude = Math.Clamp(value, -2, 20); RaisePropertyChanged(); }
         }
         public FocusStarSuggestion SelectedFocusTarget
         {
@@ -117,14 +123,17 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             {
                 var stars = await new DatabaseInteraction().GetBrightStars();
                 if (disposed) return 0;
-                var suggestions = stars.Where(s => s.Coordinates != null && double.IsFinite(s.Magnitude) && s.Magnitude <= 4)
-                    .Select(s => CalculateSuggestion(s.Name, s.Coordinates, s.Magnitude))
-                    .Where(AboveFocusHorizon).OrderByDescending(s => s.Altitude).ThenBy(s => s.Magnitude).Take(20).ToList();
+                var horizon = focusProfileService.ActiveProfile.AstrometrySettings.Horizon;
+                var suggestions = FocusStarPlanner.SelectVisibleStars(
+                    stars.Where(s => s.Coordinates != null).Select(s => CalculateSuggestion(s.Name, s.Coordinates, s.Magnitude)),
+                    MinimumFocusAltitude, MaximumFocusMagnitude, azimuth => horizon?.GetAltitude(azimuth) ?? 0);
+                string selectedName = SelectedFocusTarget?.Name;
                 FocusTargets.Clear();
                 foreach (var star in suggestions) FocusTargets.Add(star);
-                SelectedFocusTarget = suggestions.FirstOrDefault();
+                SelectedFocusTarget = suggestions.FirstOrDefault(s => s.Name == selectedName) ?? suggestions.FirstOrDefault();
                 var site = focusProfileService.ActiveProfile.AstrometrySettings;
-                FocusTargetStatus = $"{suggestions.Count} stars · site {site.Latitude:F4}, {site.Longitude:F4} · {DateTimeOffset.Now:HH:mm:ss zzz}. Check exposure saturation after GOTO.";
+                FocusTargetStatus = $"{suggestions.Count}/{stars.Count} catalogue stars · alt ≥ {MinimumFocusAltitude:F0}° · mag ≤ {MaximumFocusMagnitude:F1} · horizon +5°. " +
+                    $"Site {site.Latitude:F4}, {site.Longitude:F4} · {DateTimeOffset.Now:HH:mm:ss zzz}. Check exposure saturation after GOTO.";
                 RaisePropertyChanged(nameof(FocusTargetStatus));
                 return suggestions.Count;
             }
@@ -142,6 +151,8 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             if (!CanGotoFocusTarget()) return 0;
             var target = CalculateSuggestion(SelectedFocusTarget.Name, SelectedFocusTarget.Coordinates, SelectedFocusTarget.Magnitude);
             if (!AboveFocusHorizon(target)) throw new InvalidOperationException("Star is below the current altitude/horizon limit. Refresh the list.");
+            if (!double.IsFinite(target.Magnitude) || target.Magnitude > MaximumFocusMagnitude)
+                throw new InvalidOperationException("Star is outside the current magnitude limit. Refresh the list.");
             // Snapshot all capture/solver settings and resolve the configured solver
             // before moving the mount. These are NINA's own Center services/exports.
             var profile = focusProfileService.ActiveProfile;

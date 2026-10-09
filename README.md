@@ -15,7 +15,7 @@ Example layout rendered with synthetic test data. Exposure, In / Out steps and t
 ## Features
 
 - Absolute focuser position, adjustable In / Out steps and cancellation.
-- Bright-star selection from NINA's catalogue, filtered by altitude and the profile horizon.
+- Bright-star selection from NINA's catalogue, with adjustable minimum altitude and maximum magnitude, plus profile horizon clearance. Every matching star is listed; there is no 20-star cap.
 - GOTO with NINA's configured plate solver to center the selected star. Guiding is stopped before slewing; restart it when ready to image.
 - Live ROI preview, local HFR history and the star intensity profile. On streaming cameras, preview continues during focuser movement.
 - Mouse ROI selection: click a star, drag the box to move it, or drag an edge/corner to resize. Its size is shown outside the yellow box.
@@ -60,12 +60,14 @@ NINA supplies its own libraries; do not copy every dependency from the build dir
 
 ## Using it
 
-1. Connect the camera and focuser. Open **Setup** to optionally choose a focus star and use GOTO. Remove a Bahtinov mask for plate solving.
+1. Connect the camera and focuser. Open **Setup** to optionally choose a focus star and use GOTO. **Alt ≥** defaults to 45° and **Mag ≤** to 4.0. Smaller magnitude limits select brighter stars; larger limits include fainter stars. Use the refresh icon after editing either filter. A star must also clear the profile horizon by 5°. Remove a Bahtinov mask for plate solving.
 2. In Setup, choose **Edit ROI** to edit the full image, then **Done**, or use **Auto ROI** near the target star. Enable Bahtinov overlay here when using a mask.
 3. Fold Setup, set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR. Turn on Graphs when needed. Movement Stop and GOTO cancellation remain available with Setup folded.
 4. Adjust Stretch if the preview is too bright. Stop preview before changing exposure or ROI.
 
 Streaming and diagnostics settings are in NINA's plugin options. Diagnostics, when enabled before an operation, are saved under `%LOCALAPPDATA%\NINA\LiveFocus\FocusDiagnostics`. Turning recording off stops further records; existing records remain available.
+
+The star picker uses NINA's existing bright-star catalogue. Increasing the magnitude limit cannot add stars absent from that catalogue. Its status shows the matching/catalogue counts and applied filters, and Refresh preserves your selected star when it still matches. [Star filter layout](docs/live-focus-star-filters.png).
 
 ## Verification
 

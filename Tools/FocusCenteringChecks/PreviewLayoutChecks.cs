@@ -56,6 +56,7 @@ internal static partial class PreviewDisplayChecks {
         var toggle=(ToggleButton)view.FindName("MeasurementsToggle");
         var metric=(TextBlock)view.FindName("CompactMetric");
         check(!setup.IsExpanded && toggle.IsChecked==false,"Occasional setup and graphs start folded");
+        var magnitudeInput=(TextBox)view.FindName("MaximumMagnitudeInput");
         foreach(var size in new[]{(350,500),(350,700),(650,500),(650,700),(950,700)}) {
             int width=size.Item1,height=size.Item2;
             string label=$"{width} x {height}";
@@ -86,10 +87,20 @@ internal static partial class PreviewDisplayChecks {
                 :graphs.TranslatePoint(new Point(),view).X>preview.TranslatePoint(new Point(),view).X),
                 "Optional graphs appear below narrow images or beside wide images at "+label);
             toggle.IsChecked=false;setup.IsExpanded=true;view.UpdateLayout();
+            if(width==350 && height==500) {
+                view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);
+                magnitudeInput.Text="1.5";magnitudeInput.GetBindingExpression(TextBox.TextProperty).UpdateSource();
+                check(vm.MaximumFocusMagnitude==1.5,"Magnitude input commits the user's brightness limit");
+                vm.MaximumFocusMagnitude=4;view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);
+            }
             check(preview.ActualHeight<fullHeight && preview.ActualHeight>=180 && ((Button)view.FindName("EditRoiButton")).ActualHeight>=28,
                 "Expanded setup leaves a usable image and exposes ROI controls at "+label);
             var roiCard=(FrameworkElement)view.FindName("RoiSetupCard");
             var starCard=(FrameworkElement)view.FindName("StarSetupCard");
+            var altitudeInput=(TextBox)view.FindName("MinimumAltitudeInput");
+            var magnitudeBounds=magnitudeInput.TransformToAncestor(starCard).TransformBounds(new Rect(magnitudeInput.RenderSize));
+            check(altitudeInput.ActualWidth>=40 && magnitudeInput.ActualWidth>=48 && magnitudeBounds.Left>=0 && magnitudeBounds.Right<=starCard.ActualWidth,
+                "Altitude and magnitude filters fit together in compact star setup at "+label);
             check(width<616 ? starCard.TranslatePoint(new Point(),view).Y>=roiCard.TranslatePoint(new Point(),view).Y+roiCard.ActualHeight
                 : starCard.TranslatePoint(new Point(),view).X>=roiCard.TranslatePoint(new Point(),view).X+roiCard.ActualWidth,
                 "ROI and star setup cards do not overlap on initial layout or resizing at "+label);
@@ -99,6 +110,12 @@ internal static partial class PreviewDisplayChecks {
             check(video.TranslatePoint(new Point(),view).Y==videoY && videoY<30 && setup.TranslatePoint(new Point(),view).Y<110,
                 "Only setup scrolls; live controls and fold header remain visible at "+label);
             controlsScroll.ScrollToTop();view.UpdateLayout();
+            if(width==650 && height==700) {
+                var starShot=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);starShot.Render(view);
+                starShot.CopyPixels(new byte[width*height*4],width*4,0);
+                var starEncoder=new PngBitmapEncoder();starEncoder.Frames.Add(BitmapFrame.Create(starShot));
+                using(var file=File.Create("bin/live-focus-star-filters.png"))starEncoder.Save(file);
+            }
             if(width==350 && height==500) {
                 var setupShot=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);setupShot.Render(view);
                 setupShot.CopyPixels(new byte[width*height*4],width*4,0);

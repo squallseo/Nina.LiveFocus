@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using NINA.Astrometry;
 
 namespace Cwseo.NINA.LiveFocus.Models
@@ -36,5 +38,11 @@ namespace Cwseo.NINA.LiveFocus.Models
         public static bool IsAboveHorizon(FocusStarSuggestion star, double minimumAltitude, double horizonAltitude) =>
             star != null && double.IsFinite(star.Altitude) && double.IsFinite(minimumAltitude) &&
             double.IsFinite(horizonAltitude) && star.Altitude >= Math.Max(minimumAltitude, horizonAltitude + 5);
+
+        public static List<FocusStarSuggestion> SelectVisibleStars(IEnumerable<FocusStarSuggestion> stars,
+            double minimumAltitude, double maximumMagnitude, Func<double, double> horizonAltitude) =>
+            stars.Where(star => star != null && double.IsFinite(star.Magnitude) && double.IsFinite(maximumMagnitude) &&
+                star.Magnitude <= maximumMagnitude && IsAboveHorizon(star, minimumAltitude, horizonAltitude(star.Azimuth)))
+                .OrderByDescending(star => star.Altitude).ThenBy(star => star.Magnitude).ToList();
     }
 }

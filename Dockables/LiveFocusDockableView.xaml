@@ -268,28 +268,32 @@
             </Border>
             <Border x:Name="StarSetupCard" Grid.Row="1" Style="{StaticResource FocusCard}" Padding="10">
               <StackPanel>
-                <DockPanel Margin="0,0,0,8">
-                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <TextBlock Text="Focus star" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6" />
+                <WrapPanel Margin="0,0,0,6">
+                  <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
                     <TextBlock Text="Alt ≥" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                    <TextBox Width="38" MinHeight="26" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Minimum star altitude" ToolTip="Minimum altitude in degrees. Refresh after changing." />
+                    <TextBox x:Name="MinimumAltitudeInput" Width="42" MinHeight="26" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Minimum star altitude" ToolTip="Minimum altitude in degrees (15 to 85). Refresh after changing. Stars must also clear the profile horizon by 5°." />
                     <TextBlock Text="°" VerticalAlignment="Center" Margin="3,0,0,0" />
                   </StackPanel>
-                  <TextBlock Text="Focus star" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
-                </DockPanel>
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Mag ≤" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <TextBox x:Name="MaximumMagnitudeInput" Width="48" MinHeight="26" Text="{Binding MaximumFocusMagnitude, StringFormat=F1, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Maximum star magnitude" ToolTip="Faintest allowed magnitude (-2 to 20). Smaller numbers select brighter stars; larger numbers allow fainter stars. Refresh after changing. Only stars in NINA's bright-star catalogue are available." />
+                  </StackPanel>
+                </WrapPanel>
                 <Grid Margin="0,0,0,6">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <ComboBox x:Name="FocusStarPicker" MinHeight="28" ItemsSource="{Binding FocusTargets}" SelectedItem="{Binding SelectedFocusTarget}" MaxDropDownHeight="240" AutomationProperties.Name="Focus star" ToolTip="Stars above the minimum altitude and your profile horizon.">
+                  <ComboBox x:Name="FocusStarPicker" MinHeight="28" ItemsSource="{Binding FocusTargets}" SelectedItem="{Binding SelectedFocusTarget}" MaxDropDownHeight="240" AutomationProperties.Name="Focus star" ToolTip="NINA bright-star catalogue filtered by altitude, magnitude and profile horizon. Every matching star is listed, ordered by altitude.">
                     <ComboBox.ItemTemplate>
                       <DataTemplate>
                         <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" FontSize="11" />
                       </DataTemplate>
                     </ComboBox.ItemTemplate>
                   </ComboBox>
-                  <Button Grid.Column="1" Width="28" Padding="5" Style="{StaticResource FocusButton}" Command="{Binding RefreshFocusTargetsCommand}" Margin="6,0,0,0" ToolTip="Refresh visible focus stars using the current time and profile location." AutomationProperties.Name="Refresh focus stars">
+                  <Button Grid.Column="1" Width="28" Padding="5" Style="{StaticResource FocusButton}" Command="{Binding RefreshFocusTargetsCommand}" Margin="6,0,0,0" ToolTip="Apply the altitude and magnitude filters using the current time and profile location." AutomationProperties.Name="Refresh focus stars">
                     <Viewbox Width="14" Height="14">
                       <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 16,2 L 16,7 L 11,7 L 13,5 A 6,6 0 1 0 14,11 L 16,11 A 8,8 0 1 1 14.5,3.5 Z" />
                     </Viewbox>
