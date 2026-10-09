@@ -54,14 +54,17 @@ internal static partial class PreviewDisplayChecks
             "Inspector labels sensor-center HFR and disables single-star Bahtinov overlay");
         var render=type.GetMethod("RenderAberrationPreview",BindingFlags.Instance|BindingFlags.NonPublic);
         var preview=(ImageSource)render.Invoke(vm,new object[]{source,null});
-        check(preview.IsFrozen && preview.Width==plan.Width && preview.Height==plan.Height && preview is BitmapSource bitmap && bitmap.Format==PixelFormats.Gray8,
+        check(preview.IsFrozen && preview.Width==plan.Width && preview.Height==plan.Height && preview is BitmapSource bitmap && bitmap.Format==PixelFormats.Bgr32,
             "Inspector is a compact square bitmap with no text overlays or label rows");
         foreach(string field in new[]{"assistRunning","liveImageOutputActive"})type.GetField(field,BindingFlags.Instance|BindingFlags.NonPublic).SetValue(vm,true);
         type.GetField("lastImageOutput",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(vm,0L);
         type.GetProperty(nameof(vm.FocusPreviewImage)).SetValue(vm,preview);
         var published=output();
-        check(published.IsFrozen && published.PixelWidth==plan.Width && published.PixelHeight==plan.Height && published.Format==PixelFormats.Gray8 && ReferenceEquals(published,preview),
+        check(published.IsFrozen && published.PixelWidth==plan.Width && published.PixelHeight==plan.Height && published.Format==PixelFormats.Bgr32 && ReferenceEquals(published,preview),
             "Main NINA Image shares the inspector bitmap without extra overlay rasterization");
+        var channels=new byte[plan.Width*plan.Height*4];published.CopyPixels(channels,plan.Width*4,0);
+        check(Enumerable.Range(0,display.Length).All(i=>channels[i*4]==display[i] && channels[i*4+1]==display[i] && channels[i*4+2]==display[i]),
+            "Every published RGB channel preserves all nine stretched tiles including the entire right column");
         vm.PreviewRoiPreset="50%";
         check(vm.IsAberrationInspector,"Inspector mode cannot change during live capture");
         type.GetProperty(nameof(vm.LiveHfr)).SetValue(vm,2.2);

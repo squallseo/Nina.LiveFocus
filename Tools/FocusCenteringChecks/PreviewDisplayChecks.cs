@@ -101,6 +101,7 @@ internal static partial class PreviewDisplayChecks {
         type.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,false);
         vm.ResetPreviewStretchCommand.Execute(null);await Task.Delay(250);
         RenderControls(vm,check);
+        await VerifyInspectorHostImage(vm,check);
         // Loaded fixtures below use an existing synthetic target. Target search
         // has its own harness and must not read a real observer profile here.
         type.GetField("initialFocusTargetsRequested",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(vm,true);

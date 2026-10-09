@@ -25,7 +25,12 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             double level = strength ?? PreviewStretchStrength;
             var layout = FocusAberrationMosaic.Plan(source.Width, source.Height);
             var bytes = FocusAberrationMosaic.Display(source, layout, level);
-            var bitmap = BitmapSource.Create(layout.Width, layout.Height, 96, 96, PixelFormats.Gray8, null, bytes, layout.Width);
+            // Materialize an opaque, compositor-ready bitmap on the worker. Avoid
+            // deferring Gray8 texture conversion to the host's large VisualBrush.
+            var displayPixels = new int[bytes.Length];
+            for (int i = 0; i < bytes.Length; i++) displayPixels[i] = bytes[i] * 0x010101;
+            var bitmap = BitmapSource.Create(layout.Width, layout.Height, 96, 96, PixelFormats.Bgr32, null,
+                displayPixels, checked(layout.Width * 4));
             bitmap.Freeze();
             // Keep the original ushort source for stretch changes, but publish
             // mosaic dimensions so the host never rasterizes a full sensor bitmap.
