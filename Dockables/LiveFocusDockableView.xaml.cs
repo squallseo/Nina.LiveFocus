@@ -30,8 +30,14 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             Loaded += OnLoaded;
             DataContextChanged += OnDataContextChanged;
         }
-        private void UpdateSetupHeight() => ControlsScrollViewer.MaxHeight = Math.Max(64,
-            LayoutRoot.ActualHeight - EssentialControls.ActualHeight - 32 - Math.Min(320, LayoutRoot.ActualHeight * .62));
+        private void UpdateSetupHeight()
+        {
+            // Reserve space only for a local image that is actually displayed.
+            double previewHeight = PreviewWorkspace.Visibility == Visibility.Visible
+                ? Math.Min(320, LayoutRoot.ActualHeight * .62) : 0;
+            ControlsScrollViewer.MaxHeight = Math.Max(64,
+                LayoutRoot.ActualHeight - EssentialControls.ActualHeight - 32 - previewHeight);
+        }
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             if (DataContext is LiveFocusDockableVM vm) await vm.EnsureFocusTargetsLoadedAsync();
@@ -157,6 +163,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             Grid.SetRow(MeasurementsPanel, !external && stacked ? 1 : 0);
             Grid.SetColumn(MeasurementsPanel, external || stacked ? 0 : 1);
             Grid.SetColumnSpan(MeasurementsPanel, external || stacked ? 2 : 1);
+            UpdateSetupHeight();
         }
         private void OnRoiPropertyChanged(object sender, PropertyChangedEventArgs e)
         {

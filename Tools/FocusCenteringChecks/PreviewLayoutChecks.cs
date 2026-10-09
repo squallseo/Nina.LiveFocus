@@ -84,6 +84,7 @@ internal static partial class PreviewDisplayChecks {
         check(graphs.Visibility==Visibility.Collapsed && workspace.Visibility==Visibility.Collapsed && vm.ShowLiveGraphs && toggle.Visibility==Visibility.Collapsed,
             "Main Image output hides the local star-profile toggle and workspace");
         toggle.IsChecked=false;vm.ShowInNinaImage=false;view.UpdateLayout();
+        VerifySetupSpace();
         var magnitudeInput=(TextBox)view.FindName("MaximumMagnitudeInput");
         foreach(var size in new[]{(350,500),(350,700),(650,500),(650,700),(950,700)}) {
             int width=size.Item1,height=size.Item2;
@@ -225,6 +226,31 @@ internal static partial class PreviewDisplayChecks {
             var bounds=path.TransformToAncestor(button).TransformBounds(new Rect(path.RenderSize));
             check(bounds.Width>8 && bounds.Height>8 && bounds.Left>=0 && bounds.Top>=0 && bounds.Right<=button.ActualWidth && bounds.Bottom<=button.ActualHeight,
                 "The "+name+" icon fits completely inside its button");
+        }
+        void VerifySetupSpace() {
+            vm.ShowInNinaImage=true;setup.IsExpanded=true;
+            var scroll=(ScrollViewer)view.FindName("ControlsScrollViewer");
+            var essential=(FrameworkElement)view.FindName("EssentialControls");
+            var root=(FrameworkElement)view.FindName("LayoutRoot");
+            foreach(int height in new[]{500,700,350,700}) {
+                view.Measure(new Size(486,height));view.Arrange(new Rect(0,0,486,height));view.UpdateLayout();
+                view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);view.UpdateLayout();
+                double available=root.ActualHeight-essential.ActualHeight-32;
+                check(workspace.Visibility==Visibility.Collapsed && Math.Abs(scroll.MaxHeight-available)<1 &&
+                    (scroll.ScrollableHeight<1 || scroll.ActualHeight>=available-1),
+                    "Main Image setup fills available panel height without reserving a hidden image at 486 x "+height);
+                if(height==700)check(scroll.ScrollableHeight<1 && scroll.ComputedVerticalScrollBarVisibility==Visibility.Collapsed,
+                    "Setup has no scrollbar when all controls fit after resizing to a taller dock");
+            }
+            var shot=new RenderTargetBitmap(486,700,96,96,PixelFormats.Pbgra32);shot.Render(view);
+            var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(shot));
+            using(var file=File.Create("bin/live-focus-setup-space.png"))encoder.Save(file);
+            double mainLimit=scroll.MaxHeight;
+            vm.ShowInNinaImage=false;view.UpdateLayout();
+            check(workspace.Visibility==Visibility.Visible && scroll.MaxHeight<mainLimit,
+                "Switching back to local preview restores image space immediately without resizing the dock");
+            setup.IsExpanded=false;
+            view.Measure(new Size(350,500));view.Arrange(new Rect(0,0,350,500));view.UpdateLayout();
         }
     }
 }
