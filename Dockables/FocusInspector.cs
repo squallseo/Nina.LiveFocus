@@ -6,7 +6,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
 {
     public partial class LiveFocusDockableVM
     {
-        private bool aberrationInspector;
+        private bool aberrationInspector = true;
         public bool IsAberrationInspector => aberrationInspector;
         public bool CanUseBahtinovOverlay => !IsAberrationInspector;
         private bool SetAberrationInspector(bool enabled)

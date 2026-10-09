@@ -100,7 +100,8 @@ internal static class LiveMoveChecks {
                 typeof(LiveFocusDockableVM).GetProperty(nameof(vm.CameraInfo)).SetValue(vm,cameraInfo);
                 typeof(LiveFocusDockableVM).GetProperty(nameof(vm.FocuserInfo)).SetValue(vm,focuserInfo);
                 vm.UserStep=600;
-                if(inspector){vm.PreviewRoiWidth=32;vm.PreviewRoiHeight=32;vm.PreviewRoiPreset="Inspector";}
+                if(inspector){vm.PreviewRoiWidth=32;vm.PreviewRoiHeight=32;}
+                else vm.PreviewRoiPreset="512";
                 vm.ShowInNinaImage=true;
                 vm.PropertyChanged+=(_,e)=> {
                     if(e.PropertyName!=nameof(vm.FocusPreviewImage))return;
