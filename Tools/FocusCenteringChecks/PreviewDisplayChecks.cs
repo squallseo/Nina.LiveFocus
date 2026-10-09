@@ -80,6 +80,18 @@ internal static partial class PreviewDisplayChecks {
         check(vm.PreviewStretchStrength==2 && vm.PreviewStretchText.Contains("2.00"),"Rapid slider changes settle at the latest strength");
         vm.ResetPreviewStretchCommand.Execute(null);await Task.Delay(250);
         check(vm.PreviewStretchStrength==1,"Reset restores automatic stretch strength");
+        int stretchThread=0;
+        void StretchChanged(object sender,System.ComponentModel.PropertyChangedEventArgs e) {
+            if(e.PropertyName==nameof(vm.FocusPreviewImage)) stretchThread=Environment.CurrentManagedThreadId;
+        }
+        vm.PropertyChanged+=StretchChanged;
+        vm.PreviewStretchStrength=.5;await Task.Delay(250);
+        await Task.Run(()=>type.GetProperty(nameof(vm.FocusPreviewImage)).SetValue(vm,preview));
+        await Task.Delay(250);
+        check(stretchThread==Environment.CurrentManagedThreadId && !ReferenceEquals(vm.FocusPreviewImage,preview),
+            "A background frame with outdated stretch rerenders and notifies viewers on the UI thread");
+        vm.PropertyChanged-=StretchChanged;
+        vm.ResetPreviewStretchCommand.Execute(null);await Task.Delay(250);
         type.GetField("overviewImage",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(vm,vm.FocusPreviewImage);
         type.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,true);
         var full=vm.LiveDisplayImage;vm.PreviewStretchStrength=.5;await Task.Delay(250);
@@ -88,6 +100,9 @@ internal static partial class PreviewDisplayChecks {
         type.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,false);
         vm.ResetPreviewStretchCommand.Execute(null);await Task.Delay(250);
         RenderControls(vm,check);
+        // Loaded fixtures below use an existing synthetic target. Target search
+        // has its own harness and must not read a real observer profile here.
+        type.GetField("initialFocusTargetsRequested",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(vm,true);
         await VerifyMainGraphs(vm,check);
         await VerifyMainRoiEditor(vm, sink=>hostDisplay=sink, check);
         await VerifyMainImageOutput(vm,raw,()=> (mainImage,imageWrites,imageThread),check);

@@ -9,6 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../LiveFocus.csproj" AdditionalProperties="DeployPlugin=false" />
+    <!-- Exercise the installed host's real HFR History view and view-model. -->
+    <Reference Include="NINA"><HintPath>$(NinaInstallDir)\NINA.dll</HintPath></Reference>
     <None Include="$(NinaInstallDir)\External\x64\SOFA\*.dll" Link="External\x64\SOFA\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(NinaInstallDir)\External\x64\NOVAS\*" Link="External\x64\NOVAS\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(NinaInstallDir)\External\JPLEPH" Link="External\JPLEPH" CopyToOutputDirectory="PreserveNewest" />

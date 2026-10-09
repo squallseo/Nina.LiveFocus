@@ -154,7 +154,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             if (disposed) return; disposed = true; targetSearchCts?.Cancel(); stretchRefresh?.Cancel(); assistCts?.Cancel(); moveCts?.Cancel(); gotoCts?.Cancel(); StopObservingPreparedImages();
             // Disposal already sets disposed: bypass the update guard for UI cleanup.
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            void CleanViews() { StopMainRoiEditor(); StopMainImageGraphs(); }
+            void CleanViews() { StopMainRoiEditor(); StopNinaHfrHistory(); }
             if (dispatcher == null || dispatcher.CheckAccess()) CleanViews();
             else dispatcher.BeginInvoke(new Action(CleanViews));
             try { cameraMediator.RemoveConsumer(this); } catch (Exception e) { Logger.Error("Live Focus camera consumer cleanup failed", e); }

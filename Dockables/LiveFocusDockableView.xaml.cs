@@ -141,7 +141,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             var layout = (stacked, selecting, showMeasurements, external);
             if (previewLayout == layout) return;
             previewLayout = layout;
-            MeasurementsToggle.Visibility = !selecting ? Visibility.Visible : Visibility.Collapsed;
+            MeasurementsToggle.Visibility = !selecting && !external ? Visibility.Visible : Visibility.Collapsed;
             PreviewCard.Visibility = external ? Visibility.Collapsed : Visibility.Visible;
             PreviewWorkspace.Visibility = external && (!showMeasurements || selecting) ? Visibility.Collapsed : Visibility.Visible;
             PreviewWorkspace.MinHeight = external ? 0 : 160;

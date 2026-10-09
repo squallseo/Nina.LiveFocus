@@ -219,7 +219,7 @@
             <Button x:Name="CancelGotoButton" Content="Cancel GOTO" Command="{Binding CancelGotoCommand}" Style="{StaticResource FocusButton}" Margin="6,0,0,0" Visibility="{Binding IsGoingToFocusTarget, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Cancel the slew or plate-solve centering, even with setup folded." />
           </WrapPanel>
           <DockPanel Margin="0,6,0,0">
-            <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Graphs" Style="{StaticResource FocusSwitch}" IsChecked="{Binding ShowLiveGraphs, Mode=TwoWay}" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show the recent 120 seconds of HFR below NINA Image." />
+            <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Profile" Style="{StaticResource FocusSwitch}" IsChecked="{Binding ShowLiveGraphs, Mode=TwoWay}" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show the star intensity profile beside the local preview. Live HFR appears automatically in NINA HFR History." />
             <StackPanel x:Name="CameraConnectionIndicator" Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" ToolTip="{Binding LiveFrameDetails}">
               <Viewbox Width="12" Height="12" Margin="0,0,5,0">
                 <Path Stretch="Uniform">

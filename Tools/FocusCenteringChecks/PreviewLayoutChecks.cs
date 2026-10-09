@@ -55,7 +55,7 @@ internal static partial class PreviewDisplayChecks {
         var workspace=(FrameworkElement)view.FindName("PreviewWorkspace");
         var toggle=(ToggleButton)view.FindName("MeasurementsToggle");
         var metric=(TextBlock)view.FindName("CompactMetric");
-        check(!setup.IsExpanded && toggle.IsChecked==false,"Occasional setup and graphs start folded");
+        check(!setup.IsExpanded && toggle.IsChecked==false,"Occasional setup and star profile start folded");
         view.Measure(new Size(350,500));view.Arrange(new Rect(0,0,350,500));view.UpdateLayout();
         view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);view.UpdateLayout();
         var cameraIndicator=(FrameworkElement)view.FindName("CameraConnectionIndicator");
@@ -80,8 +80,8 @@ internal static partial class PreviewDisplayChecks {
         var compactEncoder=new PngBitmapEncoder();compactEncoder.Frames.Add(BitmapFrame.Create(compactShot));
         using(var file=File.Create("bin/live-focus-image-controls.png"))compactEncoder.Save(file);
         toggle.IsChecked=true;view.UpdateLayout();
-        check(graphs.Visibility==Visibility.Collapsed && workspace.Visibility==Visibility.Collapsed && vm.ShowLiveGraphs,
-            "NINA Image graphs use no duplicate local workspace");
+        check(graphs.Visibility==Visibility.Collapsed && workspace.Visibility==Visibility.Collapsed && vm.ShowLiveGraphs && toggle.Visibility==Visibility.Collapsed,
+            "Main Image output hides the local star-profile toggle and workspace");
         toggle.IsChecked=false;vm.ShowInNinaImage=false;view.UpdateLayout();
         var magnitudeInput=(TextBox)view.FindName("MaximumMagnitudeInput");
         foreach(var size in new[]{(350,500),(350,700),(650,500),(650,700),(950,700)}) {
@@ -112,7 +112,7 @@ internal static partial class PreviewDisplayChecks {
             check(graphs.Visibility==Visibility.Visible && (width<616
                 ?graphs.TranslatePoint(new Point(),view).Y>=preview.TranslatePoint(new Point(),view).Y+preview.ActualHeight
                 :graphs.TranslatePoint(new Point(),view).X>preview.TranslatePoint(new Point(),view).X),
-                "Optional graphs appear below narrow images or beside wide images at "+label);
+                "Optional star profile appears below narrow images or beside wide images at "+label);
             toggle.IsChecked=false;setup.IsExpanded=true;view.UpdateLayout();
             if(width==350 && height==500) {
                 var sync=(ToggleButton)view.FindName("SyncMountToggle");
@@ -206,7 +206,7 @@ internal static partial class PreviewDisplayChecks {
         using(var file=File.Create("bin/live-focus-roi.png"))roiEncoder.Save(file);
         vmType.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,false);view.UpdateLayout();
         check(toggle.IsChecked==true && vm.ShowLiveGraphs && graphs.Visibility==Visibility.Collapsed && ((FrameworkElement)view.FindName("PreviewCard")).Visibility==Visibility.Collapsed,
-            "Leaving ROI editing restores host graphs and hides the temporary local editor in Image mode");
+            "Leaving ROI editing hides the local profile and temporary editor in main Image mode");
         toggle.IsChecked=false;vm.ShowInNinaImage=false;
         var exposureSlider=(Slider)view.FindName("ExposureSlider");
         vm.PreviewExposureMs=250;view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);

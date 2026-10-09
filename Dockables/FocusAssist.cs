@@ -35,7 +35,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public string LiveTimingText { get; private set; } = "Timing will appear after the first live frame.";
         private ImageSource overviewImage;
         private bool isSelectingRoi;
-        public bool IsSelectingRoi { get => isSelectingRoi; private set { isSelectingRoi = value; RaisePropertyChanged(); RaisePropertyChanged(nameof(LiveDisplayImage)); RaisePropertyChanged(nameof(RoiLocationText)); UpdateMainImageGraphs(); UpdateMainRoiEditor(); } }
+        public bool IsSelectingRoi { get => isSelectingRoi; private set { isSelectingRoi = value; RaisePropertyChanged(); RaisePropertyChanged(nameof(LiveDisplayImage)); RaisePropertyChanged(nameof(RoiLocationText)); UpdateNinaHfrHistory(); UpdateMainRoiEditor(); } }
         public ImageSource LiveDisplayImage => IsSelectingRoi ? overviewImage : FocusPreviewImage;
         public string RoiLocationText => $"{(IsSelectingRoi ? "Full frame: click a star or drag a rectangle. " : "")}ROI {PreviewRoiRectangle.Width}×{PreviewRoiRectangle.Height} px | X {PreviewCenterX:F1}%, Y {PreviewCenterY:F1}% | HFR: central 256 px";
         public ICommand SelectRoiCommand { get; private set; }
@@ -86,6 +86,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             {
                 isStoppingFocusPreview = true;
                 RaisePropertyChanged(nameof(IsStoppingFocusPreview));
+                UpdateNinaHfrHistory();
                 SetAssistStatus("Stopping; waiting for the camera...");
                 assistCts?.Cancel();
             }, _ => assistRunning && !isStoppingFocusPreview);
@@ -157,6 +158,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             }
             applicationStatusMediator.StatusUpdate(new ApplicationStatus { Source = "Live Focus", Status = string.Empty });
             assistRunning = false; IsCapturing = false; if (moving) IsMoving = false;
+            UpdateNinaHfrHistory();
             isStoppingFocusPreview = false;
             RaisePropertyChanged(nameof(IsStoppingFocusPreview));
             RaisePropertyChanged(nameof(IsFocusAssistRunning));
@@ -179,6 +181,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 BeginAssist(false);
                 IsSelectingRoi = false;
                 liveImageOutputActive = true;
+                UpdateNinaHfrHistory();
                 lastImageOutput = 0;
                 RaisePropertyChanged(nameof(RoiLocationText));
                 ClearLiveHistory();
@@ -307,6 +310,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 // A capture error/Stop also cancels the motor. Hold reservation/UI
                 // ownership until both native stream cleanup and movement finish.
                 liveImageOutputActive = false;
+                UpdateNinaHfrHistory();
                 assistCts?.Cancel();
                 try { if (stream != null) await stream.DisposeAsync(); }
                 catch { SetAssistStatus("Camera stream stop failed. Reconnect the camera before retrying."); throw; }

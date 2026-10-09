@@ -38,6 +38,13 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public ICommand ResetPreviewStretchCommand { get; private set; }
         private async Task RefreshPreviewStretchAsync()
         {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (disposed || dispatcher?.HasShutdownStarted == true) return;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                await dispatcher.InvokeAsync(RefreshPreviewStretchAsync).Task.Unwrap();
+                return;
+            }
             using var cancellation = new CancellationTokenSource();
             stretchRefresh = cancellation;
             try

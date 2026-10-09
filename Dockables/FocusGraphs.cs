@@ -9,7 +9,9 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         private LiveHfrHistory liveHistory;
         private double lastGraphTime = double.NegativeInfinity;
         private bool showLiveGraphs;
-        private MainImageGraphs mainImageGraphs;
+        private NinaHfrHistoryOutput ninaHfrHistory;
+        internal bool CanPublishNinaHfrHistory => !disposed && liveImageOutputActive &&
+            IsFocusAssistRunning && !IsStoppingFocusPreview && !IsSelectingRoi;
         public DataPoint[] LiveGraphPoints { get; private set; } = Array.Empty<DataPoint>();
         public bool ShowLiveGraphs
         {
@@ -17,7 +19,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             set
             {
                 if (showLiveGraphs == value) return;
-                showLiveGraphs = value; RaisePropertyChanged(); UpdateMainImageGraphs();
+                showLiveGraphs = value; RaisePropertyChanged();
             }
         }
         private void RecordLiveHfr(double seconds, double hfr)
@@ -27,24 +29,26 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             lastGraphTime = seconds;
             LiveGraphPoints = liveHistory.DisplayPoints();
             RaisePropertyChanged(nameof(LiveGraphPoints));
+            ninaHfrHistory?.UpdateFrame();
         }
         private void ClearLiveHistory()
         {
             liveHistory.Clear(); lastGraphTime = double.NegativeInfinity;
             LiveGraphPoints = Array.Empty<DataPoint>(); RaisePropertyChanged(nameof(LiveGraphPoints));
+            ninaHfrHistory?.UpdateFrame();
         }
-        private void UpdateMainImageGraphs()
+        private void UpdateNinaHfrHistory()
         {
-            if (!disposed && ShowLiveGraphs && ShowInNinaImage && !IsSelectingRoi)
+            if (CanPublishNinaHfrHistory)
             {
-                mainImageGraphs ??= new MainImageGraphs(this);
-                mainImageGraphs.Start();
+                ninaHfrHistory ??= new NinaHfrHistoryOutput(this);
+                ninaHfrHistory.Start();
             }
-            else StopMainImageGraphs();
+            else StopNinaHfrHistory();
         }
-        private void StopMainImageGraphs()
+        private void StopNinaHfrHistory()
         {
-            mainImageGraphs?.Dispose(); mainImageGraphs = null;
+            ninaHfrHistory?.Dispose(); ninaHfrHistory = null;
         }
     }
 }

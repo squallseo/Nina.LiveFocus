@@ -1,5 +1,8 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
+[assembly: SupportedOSPlatform("windows7.0")]
 
 [assembly: Guid("ae6b70d2-e99d-4931-8d7c-3e89b6aa27b4")]
 [assembly: AssemblyVersion("0.1.0.0")]
