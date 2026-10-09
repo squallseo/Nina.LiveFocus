@@ -82,7 +82,7 @@ internal static class LiveMoveChecks {
         object Display(BitmapSource bitmap) {
             var plan=Cwseo.NINA.LiveFocus.Models.FocusAberrationMosaic.Plan(128,128);
             if(!bitmap.IsFrozen || bitmap.PixelWidth!=(inspector?plan.Width:128) || bitmap.PixelHeight!=(inspector?plan.Height:128) ||
-                inspector && bitmap.Format!=System.Windows.Media.PixelFormats.Pbgra32 || owner!=vm)
+                inspector && bitmap.Format!=System.Windows.Media.PixelFormats.Gray8 || owner!=vm)
                 throw new Exception("Main Image must receive a frozen ROI while Live Focus owns capture");
             Interlocked.Increment(ref imageWrites);
             if(vm.IsMoving)Interlocked.Increment(ref movingImageWrites);

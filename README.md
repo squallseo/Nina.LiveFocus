@@ -78,7 +78,7 @@ NINA supplies its own libraries; do not copy every dependency from the build dir
 3. Fold Setup, open NINA's **Image** panel, set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR. Open NINA's **HFR History** panel to see live ROI measurements automatically. Movement Stop and target-move cancellation remain available with Setup folded.
 4. Adjust Stretch if the preview is too bright. Stop preview before changing exposure or ROI.
 
-For full-sensor star-shape comparison, stop preview and choose **Setup → Star area → ROI list → Inspector 3×3**, then start again. The nine labeled tiles are up to 512 × 512 pixels each, without resampling. Smaller sensors use smaller tiles. The camera acquires the full sensor, so download time remains the same as Full frame; only the nine tiles are copied and stretched for display. Focuser movement continues without restarting a native stream.
+For full-sensor star-shape comparison, stop preview and choose **Setup → Star area → ROI list → Inspector 3×3**, then start again. The nine tiles are up to 512 × 512 pixels each, without resampling. Smaller sensors use smaller tiles. The camera acquires the full sensor, so download time remains the same as Full frame; only the nine tiles are copied and stretched for display. Focuser movement continues without restarting a native stream.
 
 Inspector HFR and the optional star profile measure only the sensor-center 256-pixel window. The native HFR History trace is labeled **Live Focus HFR (sensor center)**; it is not a nine-region average or tilt fit. Bahtinov overlay is unavailable in Inspector. Choose a pixel or percentage preset to return to normal ROI with the previous star anchor. **Edit ROI** switches back after a successful overview capture; **Auto ROI** switches back after a successful selection. Changing display stretch never changes the source pixels.
 
@@ -124,7 +124,7 @@ dotnet run --project Tools/RoiInteractionChecks -c Release
 dotnet run --project Tools/FocusChecks -c Release
 ```
 
-The UI harness renders the actual dockable at sizes from 350 × 500 to 950 × 700 without opening NINA, checking folding, resizing and active-operation controls. It also renders NINA's real ImageView on a hidden WPF surface, checking ROI coordinate mapping, movement/resizing, cursors, zoom, rotation, flip and cleanup. Inspector checks cover original-pixel tile extraction, shared stretch, labels in main Image output, single-exposure fallback, mode switching and continuous focuser movement through generic/ASI streams. These checks verify workflow, cleanup and rendering; physical camera throughput and optical performance still need field testing.
+The UI harness renders the actual dockable at sizes from 350 × 500 to 950 × 700 without opening NINA, checking folding, resizing and active-operation controls. It also renders NINA's real ImageView on a hidden WPF surface, checking ROI coordinate mapping, movement/resizing, cursors, zoom, rotation, flip and cleanup. Inspector checks cover original-pixel tile extraction, shared stretch, compact main Image output, single-exposure fallback, mode switching and continuous focuser movement through generic/ASI streams. These checks verify workflow, cleanup and rendering; physical camera throughput and optical performance still need field testing.
 
 ## Origin and license
 

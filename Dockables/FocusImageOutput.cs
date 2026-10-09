@@ -57,7 +57,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             try
             {
                 BitmapSource image = raw.Bitmap;
-                if (raw.Inspector || raw.Overlay?.IsValid == true)
+                if (raw.Overlay?.IsValid == true)
                 {
                     var visual = new DrawingVisual();
                     using (var drawing = visual.RenderOpen())

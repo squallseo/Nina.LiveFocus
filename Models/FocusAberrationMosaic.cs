@@ -6,11 +6,9 @@ namespace Cwseo.NINA.LiveFocus.Models
     /// <summary>Nine unscaled sensor crops; only the displayed tiles are copied.</summary>
     public static class FocusAberrationMosaic
     {
-        public const int TileSize = 512, Header = 24, Gap = 8;
-        public readonly record struct Tile(string Label, int X, int Y, int DisplayX, int DisplayY);
+        public const int TileSize = 512, Gap = 8;
+        public readonly record struct Tile(int X, int Y, int DisplayX, int DisplayY);
         public sealed record Layout(int Size, int Width, int Height, Tile[] Tiles);
-        private static readonly string[] labels = {
-            "Top left", "Top", "Top right", "Left", "Center", "Right", "Bottom left", "Bottom", "Bottom right" };
 
         public static Layout Plan(int width, int height, int tileSize = TileSize)
         {
@@ -19,10 +17,10 @@ namespace Cwseo.NINA.LiveFocus.Models
             var tiles = new Tile[9];
             for (int row = 0; row < 3; row++)
                 for (int col = 0; col < 3; col++)
-                    tiles[row * 3 + col] = new Tile(labels[row * 3 + col],
+                    tiles[row * 3 + col] = new Tile(
                         col * (width - size) / 2, row * (height - size) / 2,
-                        col * (size + Gap), row * (size + Header + Gap) + Header);
-            return new Layout(size, size * 3 + Gap * 2, (size + Header) * 3 + Gap * 2, tiles);
+                        col * (size + Gap), row * (size + Gap));
+            return new Layout(size, size * 3 + Gap * 2, size * 3 + Gap * 2, tiles);
         }
 
         public static FocusRawFrame Extract(FocusRawFrame source, Layout layout, CancellationToken token = default)
@@ -44,7 +42,7 @@ namespace Cwseo.NINA.LiveFocus.Models
 
         public static byte[] Display(FocusRawFrame source, Layout layout, double strength = 1)
         {
-            // Stretch all nine scientific crops together. Headers and gutters do
+            // Stretch all nine scientific crops together. Gutters do
             // not bias background/noise estimation, and tiles keep one pixel scale.
             var bytes = FocusDisplayStretch.RenderRaw(Extract(source, layout), strength);
             var output = new byte[checked(layout.Width * layout.Height)];

@@ -27,16 +27,16 @@ internal static partial class PreviewDisplayChecks
             var tile=plan.Tiles[i];int x=i%3*plan.Size,y=i/3*plan.Size;
             check(compact.Sample(y*compact.Width+x)==source.Sample(tile.Y*w+tile.X) &&
                 compact.Sample((y+plan.Size-1)*compact.Width+x+plan.Size-1)==source.Sample((tile.Y+plan.Size-1)*w+tile.X+plan.Size-1),
-                "Inspector tile "+tile.Label+" preserves original sensor pixels without resampling");
+                "Inspector tile "+i+" preserves original sensor pixels without resampling");
         }
         var common=FocusDisplayStretch.RenderRaw(compact);
         var display=FocusAberrationMosaic.Display(source,plan);
         check(plan.Tiles.Select((t,i)=>display[(t.DisplayY+100)*plan.Width+t.DisplayX+100]==common[(i/3*plan.Size+100)*compact.Width+i%3*plan.Size+100]).All(v=>v),
             "All nine tiles use a common automatic stretch instead of independent contrast estimates");
-        check(display.Take(plan.Width*FocusAberrationMosaic.Header).All(v=>v==0) && pixels.SequenceEqual(original),
-            "Mosaic labels and gutters do not enter stretch statistics or modify raw camera data");
+        check(Enumerable.Range(0,plan.Height).All(y=>display.Skip(y*plan.Width+plan.Size).Take(FocusAberrationMosaic.Gap).All(v=>v==0)) && pixels.SequenceEqual(original),
+            "Mosaic gutters do not enter stretch statistics or modify raw camera data");
         var large=FocusAberrationMosaic.Plan(9576,6388);
-        check(large.Size==512 && large.Width==1552 && large.Height==1624 && large.Tiles.All(t=>t.X+512<=9576 && t.Y+512<=6388),
+        check(large.Size==512 && large.Width==1552 && large.Height==1552 && large.Tiles.All(t=>t.X+512<=9576 && t.Y+512<=6388),
             "Full QHY600 sensor output remains bounded to nine 512-pixel crops and a small mosaic");
         using(var canceled=new CancellationTokenSource()) {
             canceled.Cancel();bool stopped=false;
@@ -54,22 +54,21 @@ internal static partial class PreviewDisplayChecks
             "Inspector labels sensor-center HFR and disables single-star Bahtinov overlay");
         var render=type.GetMethod("RenderAberrationPreview",BindingFlags.Instance|BindingFlags.NonPublic);
         var preview=(ImageSource)render.Invoke(vm,new object[]{source,null});
-        check(preview.IsFrozen && preview.Width==plan.Width && preview.Height==plan.Height && preview is DrawingImage drawing &&
-            InspectorDrawings(drawing.Drawing).OfType<GlyphRunDrawing>().Count()>=9,
-            "Nine region labels are included in the frozen inspector image");
+        check(preview.IsFrozen && preview.Width==plan.Width && preview.Height==plan.Height && preview is BitmapSource bitmap && bitmap.Format==PixelFormats.Gray8,
+            "Inspector is a compact square bitmap with no text overlays or label rows");
         foreach(string field in new[]{"assistRunning","liveImageOutputActive"})type.GetField(field,BindingFlags.Instance|BindingFlags.NonPublic).SetValue(vm,true);
         type.GetField("lastImageOutput",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(vm,0L);
         type.GetProperty(nameof(vm.FocusPreviewImage)).SetValue(vm,preview);
         var published=output();
-        check(published.IsFrozen && published.PixelWidth==plan.Width && published.PixelHeight==plan.Height && published.Format==PixelFormats.Pbgra32,
-            "Main NINA Image receives the labeled mosaic dimensions, not a rasterized full-sensor image");
+        check(published.IsFrozen && published.PixelWidth==plan.Width && published.PixelHeight==plan.Height && published.Format==PixelFormats.Gray8 && ReferenceEquals(published,preview),
+            "Main NINA Image shares the inspector bitmap without extra overlay rasterization");
         vm.PreviewRoiPreset="50%";
         check(vm.IsAberrationInspector,"Inspector mode cannot change during live capture");
         type.GetProperty(nameof(vm.LiveHfr)).SetValue(vm,2.2);
         vm.PreviewStretchStrength=.5;await Task.Delay(300);
         check(!ReferenceEquals(vm.FocusPreviewImage,preview) && vm.FocusPreviewImage.Width==plan.Width && vm.FocusPreviewImage.Height==plan.Height &&
             vm.LiveHfr==2.2 && pixels.SequenceEqual(original),
-            "Inspector stretch rerenders only the mosaic, retains its labels and leaves HFR/raw data unchanged");
+            "Inspector stretch rerenders only the mosaic and leaves HFR/raw data unchanged");
         foreach(string field in new[]{"assistRunning","liveImageOutputActive"})type.GetField(field,BindingFlags.Instance|BindingFlags.NonPublic).SetValue(vm,false);
         vm.PreviewRoiPreset="512";
         check(!vm.IsAberrationInspector && vm.CanUseBahtinovOverlay && vm.PreviewRoiPreset=="512" && vm.PreviewCenterX==70 && vm.PreviewCenterY==30,
@@ -78,14 +77,6 @@ internal static partial class PreviewDisplayChecks
         vm.ResetPreviewStretchCommand.Execute(null);await Task.Delay(250);
         SaveInspectorExample(vm,render);
         await VerifyInspectorSingleCapture(check);
-    }
-
-    private static IEnumerable<Drawing> InspectorDrawings(Drawing drawing)
-    {
-        yield return drawing;
-        if(drawing is DrawingGroup group)
-            foreach(var child in group.Children)
-                foreach(var nested in InspectorDrawings(child))yield return nested;
     }
 
     private static void SaveInspectorExample(LiveFocusDockableVM vm,MethodInfo render)
