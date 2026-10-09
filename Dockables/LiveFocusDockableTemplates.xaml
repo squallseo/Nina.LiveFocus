@@ -1,0 +1,18 @@
+<ResourceDictionary
+    x:Class="Cwseo.NINA.LiveFocus.Dockables.LiveFocusDockableTemplates"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:Cwseo.NINA.LiveFocus.Dockables">
+
+    <!-- NINA locates the dockable using its fully qualified name and _Dockable suffix. -->
+    <DataTemplate x:Key="Cwseo.NINA.LiveFocus.Dockables.LiveFocusDockableVM_Dockable">
+        <local:LiveFocusDockableView/>
+    </DataTemplate>
+
+    <!--  This geometrygroup defines a custom SVG to be used with the plugin dockable  -->
+    <GeometryGroup x:Key="Cwseo.NINA.LiveFocus_SVG">
+        <PathGeometry Figures="M 1.01725e-005,-0.134583L 1.01725e-005,116.235L 8.08268,116.235L 8.08268,7.94806L 116.369,7.94806L 116.369,-0.134583M 427.765,-0.134583L 427.765,7.94806L 536.057,7.94806L 536.057,116.235L 544.135,116.235L 544.135,-0.134583M 1.01725e-005,427.631L 1.01725e-005,544L 116.369,544L 116.369,535.923L 8.08268,535.923L 8.08268,427.631M 536.057,427.631L 536.057,535.923L 427.765,535.923L 427.765,544L 544.135,544L 544.135,427.631" />
+        <PathGeometry Figures="M 180,198 L 201,198 L 201,316 L 282,316 L 282,337 L 180,337 Z" />
+        <PathGeometry Figures="M 308.357,197.795L 388.795,197.795L 388.795,213.732L 327.295,213.732L 327.295,254.982L 382.795,254.982L 382.795,270.92L 327.295,270.92L 327.295,337.774L 308.357,337.774L 308.357,197.795 Z " />
+    </GeometryGroup>
+</ResourceDictionary>

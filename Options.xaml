@@ -1,0 +1,15 @@
+<ResourceDictionary x:Class="Cwseo.NINA.LiveFocus.Options"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DataTemplate x:Key="Live Focus_Options">
+        <StackPanel Margin="12" MaxWidth="360">
+            <TextBlock Text="Live Focus" FontWeight="Bold" Margin="0,0,0,8"/>
+            <CheckBox Content="Use continuous camera streaming" IsChecked="{Binding UseFocusStreaming}" Margin="0,0,0,12"
+                      ToolTip="Applies on the next Start live. Unsupported cameras and QHY600M 3×3 bin mode use individual exposures."/>
+            <TextBlock Text="Diagnostics" FontWeight="Bold" Margin="0,0,0,8"/>
+            <CheckBox Content="Enable diagnostic recording" IsChecked="{Binding EnableFocusDiagnostics}" Margin="0,0,0,6"
+                      ToolTip="Off by default. Records detailed timing logs and raw FITS/JSON for troubleshooting. Enable before starting a new operation. Turning off stops further records. Errors and warnings are always logged."/>
+            <TextBlock TextWrapping="Wrap" Text="Raw images are saved under NINA\LiveFocus\FocusDiagnostics in Local AppData. Existing records are kept when this option is off."/>
+        </StackPanel>
+    </DataTemplate>
+</ResourceDictionary>
