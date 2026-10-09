@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-labelledby="title" style="color:#FFD54F">
+  <title id="title">Live Focus — play, focus ring and star</title>
+  <g fill="currentColor">
+    <path d="M18.104 5.724 A12 12 0 1 0 24.875 11.929 L22.428 13.070 A9.3 9.3 0 1 1 17.181 8.261 Z"/>
+    <path d="M10.5 11 L20 17 L10.5 23 Z"/>
+    <path d="M25 0 C25.6 4.3 26.4 5.1 30 6 C26.4 6.9 25.6 7.7 25 12 C24.4 7.7 23.6 6.9 20 6 C23.6 5.1 24.4 4.3 25 0 Z"/>
+  </g>
+</svg>

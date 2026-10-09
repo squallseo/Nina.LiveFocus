@@ -13,5 +13,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("License", "MPL-2.0")]
 [assembly: AssemblyMetadata("LicenseURL", "https://www.mozilla.org/en-US/MPL/2.0/")]
 [assembly: AssemblyMetadata("Repository", "https://github.com/squallseo/Nina.LiveFocus")]
+[assembly: AssemblyMetadata("FeaturedImageURL", "https://raw.githubusercontent.com/squallseo/Nina.LiveFocus/main/Images/live-focus-featured-v1.png")]
+[assembly: AssemblyMetadata("ScreenshotURL", "https://raw.githubusercontent.com/squallseo/Nina.LiveFocus/main/docs/live-focus-ui.png")]
 [assembly: AssemblyMetadata("LongDescription", "Move the focuser while watching a live star preview. Select a bright focus star, center it with NINA plate solving, adjust the ROI with the mouse and monitor local HFR. Includes optional Bahtinov display overlays and display-only stretch. This plugin does not run autofocus.")]
 [assembly: ComVisible(false)]

@@ -1,5 +1,7 @@
 # Live Focus for N.I.N.A.
 
+<img src="Images/live-focus-featured-v1.png" alt="Live Focus: play triangle, focus ring and star" width="256" />
+
 A NINA plugin for moving the focuser while watching a live star image.
 
 ![Live Focus layout](docs/live-focus-ui.png)

@@ -1,0 +1,8 @@
+Use case: logo-brand.
+Asset type: square representative image for a N.I.N.A. astronomy plugin named Live Focus, usable as a plugin listing thumbnail and GitHub brand image.
+Primary request: an elegant, abstract visual identity combining live video playback and astronomical focusing.
+Design: one very simple, crisp geometric emblem: a bold right-pointing play triangle inside a thick circular focus ring. The ring is interrupted in the upper-right quadrant; place a small brilliant four-point star in this interruption. The play triangle and ring must read as one coherent mark, with generous negative space. Do not use a literal camera drawing.
+Composition: square canvas, centered emblem in the upper-middle, occupying about half the width. Below it, neatly centered typography with exactly "Live Focus". No other text.
+Style: refined flat graphic design, vector-like edges, restrained soft glow around the star and ring, professional astronomy software branding, not a 3D render or photographic lens.
+Palette: deep charcoal and midnight blue background, warm golden yellow emblem inspired by a focus ROI outline, pale ivory star and lettering. Very subtle diffuse night-sky illumination in the background, no busy star field.
+Constraints: clean silhouette recognizable as a play/focus icon at thumbnail size; no tiny decorative lines, no grids, no mockups, no extra logos, no watermarks, no additional words. Keep comfortable margins on every side.
