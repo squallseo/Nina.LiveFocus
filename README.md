@@ -8,7 +8,7 @@ A NINA plugin for moving the focuser while watching a live star image.
 
 Compact controls rendered with synthetic test data. Live frames use NINA's main **Image** panel by default; there is no duplicate image workspace in Live Focus. Exposure, In / Out steps, position, local HFR and stretch stay visible. **Setup** starts folded and contains ROI, target movement, absolute position and Bahtinov overlay controls. Only its contents scroll, leaving live controls accessible on short docks.
 
-**Graphs** starts off. Turn it on to show HFR history and the star profile in a short measurement area. ROI editing temporarily opens a local full-image editor with **Retake / Done**; finishing hides it again and restores your graph choice. To use a local preview instead of the main Image panel, turn off **Setup → Use NINA Image**.
+**Graphs** starts off. Turn it on to show HFR history and the star profile in a short measurement area. ROI editing uses the main Image panel when it is visible; **Retake / Done** remain in the compact Live Focus controls. A temporary local editor is available when the main viewer is closed or **Use NINA Image** is off. Finishing restores your graph choice. To use a local preview instead of the main Image panel, turn off **Setup → Use NINA Image**.
 
 [Small-screen controls (350 × 180)](docs/live-focus-compact.png)
 
@@ -16,10 +16,11 @@ Compact controls rendered with synthetic test data. Live frames use NINA's main 
 
 - Absolute focuser position, adjustable In / Out steps and cancellation.
 - Bright-star selection from NINA's catalogue, with adjustable minimum altitude and maximum magnitude, plus profile horizon clearance. Every matching star is listed; there is no 20-star cap.
-- Separate **Slew** (coordinates only) and **Slew + Center** (NINA's configured plate solver) buttons. Guiding is stopped before either move; restart it when ready to image.
+- Separate **Slew** (coordinates only) and **Slew + Center** (NINA's configured plate solver) buttons. Active guiding is stopped before either move; disconnected, stopped, looping and selected guiders need no stop request. Guiding is not automatically restarted.
+- A **Sync mount** toggle beside the target actions directly controls NINA's existing profile **No Sync** setting, with the value inverted. There is no separate overriding setting.
 - Live ROI preview, local HFR history and the star intensity profile. On streaming cameras, preview continues during focuser movement.
 - Main **Image** output sends the live ROI, stretch and optional Bahtinov overlay to NINA, capped at 10 updates/second. Normal grayscale output shares the existing frozen bitmap; overlay output is rasterized for the host. There are no extra captures, image-history entries or file saves.
-- Mouse ROI selection: click a star, drag the box to move it, or drag an edge/corner to resize. Its size is shown outside the yellow box.
+- Mouse ROI selection in the main Image panel: click a star, drag the box to move it, or drag an edge/corner to resize. Yellow grips and cursor changes distinguish the actions. The external size label stays at a fixed screen size through zoom, rotation and flip. [Main Image ROI example](docs/live-focus-main-image-roi.png).
 - An explicit **Auto ROI** button; starting live preview preserves the chosen ROI.
 - Exposure slider in 50 ms increments, optional Bahtinov mask overlay in Setup and a compact stretch slider beside the live controls. Stretch changes only the display, never raw measurements.
 - Optional diagnostic FITS/JSON recording and detailed timing logs. Recording is **off by default**; normal errors and warnings are still logged.
@@ -62,15 +63,17 @@ NINA supplies its own libraries; do not copy every dependency from the build dir
 ## Using it
 
 1. Connect the camera and focuser. Open **Setup** to optionally choose a focus star and use **Slew** or **Slew + Center**. **Alt ≥** defaults to 45° and **Mag ≤** to 4.0. Smaller magnitude limits select brighter stars; larger limits include fainter stars. Use the refresh icon after editing either filter. A star must also clear the profile horizon by 5°. Remove a Bahtinov mask for plate solving.
-2. In Setup, choose **Edit ROI** to edit the full image, then **Done**, or use **Auto ROI** near the target star. Enable Bahtinov overlay here when using a mask.
+2. Open NINA's **Image** panel. In Setup, choose **Edit ROI**, edit the yellow box directly in Image, then use **Done** in Live Focus. Zoom, scroll, rotation and flip keep the ROI in sensor coordinates. With Image closed, use the temporary local editor. **Auto ROI** is an alternative near the target star. Enable Bahtinov overlay here when using a mask.
 3. Fold Setup, open NINA's **Image** panel, set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR. Turn on Graphs when needed. Movement Stop and target-move cancellation remain available with Setup folded.
 4. Adjust Stretch if the preview is too bright. Stop preview before changing exposure or ROI.
 
-Main Image output is **on by default** and display-only: adjust stretch and read live HFR in Live Focus; NINA's raw-image statistics, processing and save tools continue to refer to normal captures. ROI mouse editing stays in the temporary Live Focus editor. Turning off **Use NINA Image** or stopping live focus ends updates and leaves the last displayed frame in place; the next normal image replaces it. Frames are never published while idle, selecting ROI or stopping.
+Main Image output is **on by default** and display-only: adjust stretch and read live HFR in Live Focus; NINA's raw-image statistics, processing and save tools continue to refer to normal captures. Live stream frames are never published while idle, selecting ROI or stopping. Explicit **Edit ROI / Retake** publishes the full overview for mouse editing. The overlay attaches only to the host ImageView displaying that overview and is removed on Done, switching to local preview, disposal or replacement by a normal image. It does not replace host bindings or alter the camera's normal imaging ROI. Turning off **Use NINA Image** or stopping live focus ends updates and leaves the last displayed frame in place; the next normal image replaces it.
 
 Output uses NINA's public [IImagingMediator.SetImage](https://github.com/isbeorn/nina/blob/develop/NINA.Equipment/Interfaces/Mediator/IImagingMediator.cs) display API. The dispatcher keeps at most one pending output callback and uses the latest frame; it does not prepare or record every video frame.
 
-**Slew** never captures, solves or syncs the mount. It can work with the camera disconnected; with a connected camera it reserves capture ownership during movement to prevent overlapping exposures. **Slew + Center** uses NINA's centering tolerance and honors the profile's **No Sync** setting. A successful sync can improve later slews, but it does not guarantee full-sky pointing accuracy. With No Sync enabled, NINA centers using an offset without updating the mount's pointing model. See [NINA No Sync](https://nighttime-imaging.eu/docs/master/site/tabs/options/equipment/#no-sync).
+**Slew** never captures, solves or syncs the mount. It can work with the camera disconnected; with a connected camera it reserves capture ownership during movement to prevent overlapping exposures. **Slew + Center** uses NINA's centering tolerance and honors the profile's **No Sync** setting. Find it under **Options → Equipment → Telescope → No Sync**, or use **Setup → Focus star → Sync mount** in Live Focus (on means No Sync is off). This changes the shared NINA profile setting and applies to other NINA centering operations too. A successful sync can improve later slews, but it does not guarantee full-sky pointing accuracy. With No Sync enabled, NINA centers using an offset without updating the mount's pointing model. See [NINA No Sync](https://nighttime-imaging.eu/docs/master/site/tabs/options/equipment/#no-sync).
+
+Guider preparation skips idle/disconnected devices. A failed stop request is accepted only if the guider has since disconnected or is confirmed idle; an active/unknown connected state still blocks movement on failure. User cancellation and guiding restarted during the move remain distinct from an already-stopped guider. This does not infer that every pointing failure is a guiding failure: camera ownership, parked mount and plate-solving errors also have their own checks.
 
 Streaming and diagnostics settings are in NINA's plugin options. Diagnostics, when enabled before an operation, are saved under `%LOCALAPPDATA%\NINA\LiveFocus\FocusDiagnostics`. Turning recording off stops further records; existing records remain available.
 
@@ -102,7 +105,7 @@ dotnet run --project Tools/RoiInteractionChecks -c Release
 dotnet run --project Tools/FocusChecks -c Release
 ```
 
-The UI harness renders the actual dockable at sizes from 350 × 500 to 950 × 700 without opening NINA, checking folding, resizing and active-operation controls. These checks verify workflow, cleanup and rendering; physical camera throughput and optical performance still need field testing.
+The UI harness renders the actual dockable at sizes from 350 × 500 to 950 × 700 without opening NINA, checking folding, resizing and active-operation controls. It also renders NINA's real ImageView on a hidden WPF surface, checking ROI coordinate mapping, movement/resizing, cursors, zoom, rotation, flip and cleanup. These checks verify workflow, cleanup and rendering; physical camera throughput and optical performance still need field testing.
 
 ## Origin and license
 

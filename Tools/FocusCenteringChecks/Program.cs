@@ -154,7 +154,10 @@ public class Fake : DispatchProxy {
     public static T Of<T>(Func<MethodInfo, object[], object> handler) where T : class {
         var proxy = Create<T, Fake>(); ((Fake)(object)proxy).Handler = handler; return proxy;
     }
-    public static T Properties<T>(Dictionary<string, object> values) where T : class => Of<T>((m, a) =>
-        m.Name.StartsWith("get_") && values.TryGetValue(m.Name[4..], out var value) ? value : Unexpected(m));
+    public static T Properties<T>(Dictionary<string, object> values) where T : class => Of<T>((m, a) => {
+        if (m.Name.StartsWith("get_") && values.TryGetValue(m.Name[4..], out var value)) return value;
+        if (m.Name.StartsWith("set_") && values.ContainsKey(m.Name[4..])) { values[m.Name[4..]] = a[0]; return null; }
+        return Unexpected(m);
+    });
     public static object Unexpected(MethodInfo method) => throw new Exception("Unexpected API call: " + method.Name);
 }

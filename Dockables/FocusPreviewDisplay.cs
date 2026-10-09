@@ -62,6 +62,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 // Never replace a newer camera frame or a newly selected ROI.
                 if (ReferenceEquals(FocusPreviewImage, focus)) FocusPreviewImage = newFocus;
                 if (ReferenceEquals(overviewImage, overview)) overviewImage = newOverview;
+                UpdateMainRoiEditor();
                 if (ReferenceEquals(RoiSelectionPreview, selection)) RoiSelectionPreview = newSelection;
                 RaisePropertyChanged(nameof(FocusPreviewImage)); RaisePropertyChanged(nameof(LiveDisplayImage));
                 RaisePropertyChanged(nameof(RoiSelectionPreview));

@@ -35,7 +35,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public string LiveTimingText { get; private set; } = "Timing will appear after the first live frame.";
         private ImageSource overviewImage;
         private bool isSelectingRoi;
-        public bool IsSelectingRoi { get => isSelectingRoi; private set { isSelectingRoi = value; RaisePropertyChanged(); RaisePropertyChanged(nameof(LiveDisplayImage)); RaisePropertyChanged(nameof(RoiLocationText)); } }
+        public bool IsSelectingRoi { get => isSelectingRoi; private set { isSelectingRoi = value; RaisePropertyChanged(); RaisePropertyChanged(nameof(LiveDisplayImage)); RaisePropertyChanged(nameof(RoiLocationText)); UpdateMainRoiEditor(); } }
         public ImageSource LiveDisplayImage => IsSelectingRoi ? overviewImage : FocusPreviewImage;
         public string RoiLocationText => $"{(IsSelectingRoi ? "Full frame: click a star or drag a rectangle. " : "")}ROI {PreviewRoiRectangle.Width}×{PreviewRoiRectangle.Height} px | X {PreviewCenterX:F1}%, Y {PreviewCenterY:F1}% | HFR: central 256 px";
         public ICommand SelectRoiCommand { get; private set; }

@@ -221,6 +221,11 @@
             <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Graphs" Style="{StaticResource FocusSwitch}" IsChecked="False" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show HFR history and the star profile." />
             <TextBlock x:Name="CompactMetric" Text="{Binding LiveHfrText}" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
           </DockPanel>
+          <WrapPanel Margin="0,4,0,0" Visibility="{Binding IsEditingRoiInNinaImage, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
+            <TextBlock Text="ROI · edit in NINA Image" FontSize="11" Foreground="{StaticResource FocusRoiBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <Button Content="Retake" Command="{Binding RefreshRoiImageCommand}" Style="{StaticResource FocusButton}" Margin="0,0,6,0" />
+            <Button Content="Done" Command="{Binding ConfirmRoiCommand}" Style="{StaticResource FocusButton}" />
+          </WrapPanel>
           <Grid x:Name="PreviewStretchControls" ToolTip="Display only: left is darker, right is brighter. Raw focus measurements are unchanged.">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="Auto" />
@@ -323,6 +328,7 @@
                   <Button x:Name="SlewButton" Content="Slew" Command="{Binding SlewFocusTargetCommand}" ToolTip="{Binding SlewFocusTargetTooltip}" ToolTipService.ShowOnDisabled="True" Style="{StaticResource FocusButton}" MinWidth="58" Margin="0,0,6,0" />
                   <Button x:Name="GotoButton" Content="Slew + Center" Command="{Binding GotoFocusTargetCommand}" ToolTip="{Binding GotoFocusTargetTooltip}" ToolTipService.ShowOnDisabled="True" Style="{StaticResource FocusButton}" />
                 </WrapPanel>
+                <ToggleButton x:Name="SyncMountToggle" Content="Sync mount" IsChecked="{Binding SyncMountOnCentering, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,0,0,6" ToolTip="Allow mount Sync during Slew + Center. This is NINA's profile setting: Options → Equipment → Telescope → No Sync, with the value inverted. Slew alone never syncs." />
                 <TextBlock Text="{Binding FocusTargetStatus}" TextTrimming="CharacterEllipsis" ToolTip="{Binding FocusTargetStatus}" Foreground="{StaticResource SecondaryBrush}" FontSize="11" MinHeight="18" />
               </StackPanel>
             </Border>

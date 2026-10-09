@@ -38,6 +38,19 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         public ICommand CancelGotoCommand { get; private set; }
         public string FocusTargetStatus { get; private set; } = "Refresh to find bright stars using the NINA profile location.";
         public bool IsGoingToFocusTarget => isGoingToFocusTarget;
+        // The same profile setting as Options > Equipment > Telescope > No Sync.
+        // Use a positive label here; do not keep an independent overriding value.
+        public bool SyncMountOnCentering
+        {
+            get => !focusProfileService.ActiveProfile.TelescopeSettings.NoSync;
+            set
+            {
+                if (disposed || !CanConfigureLive || SyncMountOnCentering == value) return;
+                focusProfileService.ActiveProfile.TelescopeSettings.NoSync = !value;
+                RaisePropertyChanged();
+            }
+        }
+        private bool? lastSyncMountOnCentering;
         public double MinimumFocusAltitude
         {
             get => minimumFocusAltitude;
@@ -87,16 +100,39 @@ namespace Cwseo.NINA.LiveFocus.Dockables
 
         private bool CanGotoFocusTarget() => GotoUnavailableReason(true) == null;
 
-        // NINA's PHD2 StopGuiding returns false when already stopped/looping.
-        // Read the public device state to distinguish that case from stop failure.
+        // Idle/disconnected guiders need no stop request. StopGuiding returning
+        // false can also mean a disconnect or an already-idle state, not failure.
         private bool GuiderIsIdle()
         {
             string state = (guiderMediator.GetDevice() as IGuider)?.State;
             return state == PhdAppState.STOPPED || state == PhdAppState.LOOPING || state == PhdAppState.SELECTED;
         }
 
+        private async Task PrepareGuiderForSlewAsync(CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            if (guiderMediator.GetInfo()?.Connected != true || GuiderIsIdle()) return;
+            bool stopped;
+            try { stopped = await guiderMediator.StopGuiding(token); }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception e)
+            {
+                token.ThrowIfCancellationRequested();
+                if (guiderMediator.GetInfo()?.Connected != true || GuiderIsIdle()) return;
+                throw new InvalidOperationException("Could not stop guiding. Stop guiding in NINA/PHD2 and retry GOTO.", e);
+            }
+            token.ThrowIfCancellationRequested();
+            if (!stopped && guiderMediator.GetInfo()?.Connected == true && !GuiderIsIdle())
+                throw new InvalidOperationException("Could not stop guiding. Stop guiding in NINA/PHD2 and retry GOTO.");
+        }
+
         private void RefreshGotoAvailability()
         {
+            if (focusProfileService != null && lastSyncMountOnCentering != SyncMountOnCentering)
+            {
+                lastSyncMountOnCentering = SyncMountOnCentering;
+                RaisePropertyChanged(nameof(SyncMountOnCentering));
+            }
             string reason = GotoUnavailableReason(true) + "|" + GotoUnavailableReason(false);
             if (reason == lastGotoUnavailableReason) return;
             lastGotoUnavailableReason = reason;
@@ -184,7 +220,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 if (guidingPrepared && guiderMediator.GetInfo()?.Connected == true)
                 {
                     string state = (guiderMediator.GetDevice() as IGuider)?.State;
-                    if (state == PhdAppState.GUIDING || state == PhdAppState.CALIBRATING || state == PhdAppState.LOSTLOCK)
+                    if (state == PhdAppState.GUIDING || state == PhdAppState.CALIBRATING || state == PhdAppState.LOSTLOCK || state == PhdAppState.PAUSED)
                         throw new InvalidOperationException("Guiding resumed during focus-star centering. Stop guiding and retry GOTO.");
                 }
             }
@@ -231,10 +267,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 if (guiderMediator.GetInfo()?.Connected == true)
                 {
                     ReportStatus("Stopping guiding before focus-star GOTO…");
-                    bool stopped = await guiderMediator.StopGuiding(runCts.Token);
-                    runCts.Token.ThrowIfCancellationRequested();
-                    if (!stopped && !GuiderIsIdle())
-                        throw new InvalidOperationException("Could not stop guiding. Stop guiding in NINA/PHD2 and retry GOTO.");
+                    await PrepareGuiderForSlewAsync(runCts.Token);
                 }
                 guidingPrepared = true;
                 runCts.Token.ThrowIfCancellationRequested(); CheckDevices();

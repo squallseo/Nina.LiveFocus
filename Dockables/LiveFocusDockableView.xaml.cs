@@ -136,16 +136,16 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             if (PreviewCard == null || MeasurementsPanel == null || MeasurementsToggle == null || CompactMetric == null) return;
             bool stacked = PreviewWorkspace.ActualWidth < 600;
             bool selecting = DataContext is LiveFocusDockableVM vm && vm.IsSelectingRoi;
-            bool external = !selecting && DataContext is LiveFocusDockableVM output && output.ShowInNinaImage;
+            bool external = DataContext is LiveFocusDockableVM output && output.ShowInNinaImage && (!selecting || output.IsEditingRoiInNinaImage);
             bool showMeasurements = MeasurementsToggle.IsChecked == true;
             var layout = (stacked, selecting, showMeasurements, external);
             if (previewLayout == layout) return;
             previewLayout = layout;
             MeasurementsToggle.Visibility = !selecting ? Visibility.Visible : Visibility.Collapsed;
             PreviewCard.Visibility = external ? Visibility.Collapsed : Visibility.Visible;
-            PreviewWorkspace.Visibility = external && !showMeasurements ? Visibility.Collapsed : Visibility.Visible;
+            PreviewWorkspace.Visibility = external && (!showMeasurements || selecting) ? Visibility.Collapsed : Visibility.Visible;
             PreviewWorkspace.MinHeight = external ? 0 : 160;
-            PreviewWorkspace.Height = external ? showMeasurements ? 190 : 0 : double.NaN;
+            PreviewWorkspace.Height = external ? showMeasurements && !selecting ? 190 : 0 : double.NaN;
             LayoutRoot.RowDefinitions[1].Height = external ? GridLength.Auto : new GridLength(1, GridUnitType.Star);
             PreviewWorkspace.ColumnDefinitions[0].Width = new GridLength(stacked ? 1 : 3, GridUnitType.Star);
             PreviewWorkspace.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(2, GridUnitType.Star);
@@ -167,7 +167,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
         }
         private void OnRoiPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(LiveFocusDockableVM.ShowInNinaImage)) UpdatePreviewLayout();
+            if (e.PropertyName is nameof(LiveFocusDockableVM.ShowInNinaImage) or nameof(LiveFocusDockableVM.IsEditingRoiInNinaImage)) UpdatePreviewLayout();
             if (e.PropertyName == nameof(LiveFocusDockableVM.IsSelectingRoi))
             {
                 // Editing happens on the image; Retake and Done remain in its header.

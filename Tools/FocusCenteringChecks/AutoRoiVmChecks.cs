@@ -22,7 +22,7 @@ internal static class AutoRoiVmChecks {
     }
     private static async Task RunAsync(Action<bool,string> check) {
         Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory,"Database","Migration"));
-        var profile=Fake.Of<IProfile>((m,a)=>Fake.Unexpected(m));
+        var profile=Fake.Of<IProfile>((m,a)=>m.Name=="get_TelescopeSettings"?Fake.Properties<ITelescopeSettings>(new(){["NoSync"]=true}):Fake.Unexpected(m));
         var profiles=Fake.Of<IProfileService>((m,a)=>m.Name=="get_ActiveProfile"?profile:
             m.Name.StartsWith("add_") || m.Name.StartsWith("remove_")?null:Fake.Unexpected(m));
         var cameraInfo=new CameraInfo{Connected=true,DeviceId="ExplicitROI.Test",CanSubSample=true,XSize=4096,YSize=3072,

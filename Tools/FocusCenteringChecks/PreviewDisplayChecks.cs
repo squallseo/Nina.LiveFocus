@@ -39,15 +39,17 @@ internal static partial class PreviewDisplayChecks {
     }
     private static async Task Verify(Action<bool,string> check) {
         Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory,"Database","Migration"));
-        var profiles=Fake.Of<IProfileService>((m,a)=>m.Name=="get_ActiveProfile"?Fake.Of<IProfile>((n,b)=>Fake.Unexpected(n)):
+        var telescopeSettings=Fake.Properties<ITelescopeSettings>(new(){["NoSync"]=true});
+        var profile=Fake.Of<IProfile>((n,b)=>n.Name=="get_TelescopeSettings"?telescopeSettings:Fake.Unexpected(n));
+        var profiles=Fake.Of<IProfileService>((m,a)=>m.Name=="get_ActiveProfile"?profile:
             m.Name.StartsWith("add_")||m.Name.StartsWith("remove_")?null:Fake.Unexpected(m));
         var camera=Fake.Of<ICameraMediator>((m,a)=>m.Name switch {"GetInfo"=>new CameraInfo(),"IsFreeToCapture"=>true,"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var motor=Fake.Of<IFocuserMediator>((m,a)=>m.Name switch {"GetInfo"=>new FocuserInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var mount=Fake.Of<ITelescopeMediator>((m,a)=>m.Name switch {"GetInfo"=>new TelescopeInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var guider=Fake.Of<IGuiderMediator>((m,a)=>m.Name switch {"GetInfo"=>new GuiderInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var wheel=Fake.Of<IFilterWheelMediator>((m,a)=>m.Name is "RegisterConsumer" or "RemoveConsumer"?null:Fake.Unexpected(m));
-        int imageWrites=0,imageThread=0;BitmapSource mainImage=null;
-        object Display(BitmapSource image) {mainImage=image;imageWrites++;imageThread=Environment.CurrentManagedThreadId;return null;}
+        int imageWrites=0,imageThread=0;BitmapSource mainImage=null;Action<BitmapSource> hostDisplay=null;
+        object Display(BitmapSource image) {mainImage=image;imageWrites++;imageThread=Environment.CurrentManagedThreadId;hostDisplay?.Invoke(image);return null;}
         var imaging=Fake.Of<IImagingMediator>((m,a)=>m.Name switch {
             "add_ImagePrepared" or "remove_ImagePrepared"=>null,"SetImage"=>Display((BitmapSource)a[0]),_=>Fake.Unexpected(m)});
         var status=Fake.Of<IApplicationStatusMediator>((m,a)=>m.Name=="StatusUpdate"?null:Fake.Unexpected(m));
@@ -84,6 +86,7 @@ internal static partial class PreviewDisplayChecks {
         type.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,false);
         vm.ResetPreviewStretchCommand.Execute(null);await Task.Delay(250);
         RenderControls(vm,check);
+        await VerifyMainRoiEditor(vm, sink=>hostDisplay=sink, check);
         await VerifyMainImageOutput(vm,raw,()=> (mainImage,imageWrites,imageThread),check);
     }
 

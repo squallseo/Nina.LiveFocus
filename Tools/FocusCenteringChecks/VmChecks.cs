@@ -53,6 +53,7 @@ internal static class VmChecks {
         int blocks = 0, releases = 0, slews = 0, centers = 0, solvers = 0, blindSolvers = 0, guidingStops = 0;
         bool denyReservation = false, slewFails = false, solveFails = false, stopInSolve = false, stopInSlew = false;
         bool stopGuidingFails = false, stopDuringGuiding = false, restartGuidingInSolve = false, resumeDuringCapture = false;
+        bool disconnectDuringStop = false, throwDuringStop = false, idleDuringStop = false;
         string guiderState = "Guiding";
         Func<object, EventArgs, Task> guidingStarted = null;
         LiveFocusDockableVM vm = null;
@@ -97,8 +98,12 @@ internal static class VmChecks {
         }
         Task<bool> StopGuiding() {
             guidingStops++;
-            check(owner == vm && vm.IsGoingToFocusTarget, "Guiding stops within the GOTO camera reservation and cancellation scope");
+            check((owner == vm || !cameraInfo.Connected) && vm.IsGoingToFocusTarget, "Guiding stops within the GOTO camera reservation and cancellation scope");
             if(stopDuringGuiding) vm.CancelGotoCommand.Execute(null);
+            if(disconnectDuringStop) guiderInfo.Connected = false;
+            if(idleDuringStop) guiderState = "Stopped";
+            if(throwDuringStop) throw new InvalidOperationException("fake guider communication failure");
+            if(disconnectDuringStop) return Task.FromResult(false);
             if(stopGuidingFails || guiderState is "Stopped" or "Looping" or "Selected") return Task.FromResult(false);
             guiderState = "Stopped";
             return Task.FromResult(true);
@@ -154,6 +159,19 @@ internal static class VmChecks {
             void Info(string name, object value) => typeof(LiveFocusDockableVM).GetProperty(name).SetValue(vm, value);
             Info(nameof(vm.CameraInfo), cameraInfo); Info(nameof(vm.TelescopeInfo), mountInfo); Info(nameof(vm.GuiderInfo), guiderInfo);
             check(vm.MinimumFocusAltitude == 45 && vm.MaximumFocusMagnitude == 4, "Star filters default to 45 degrees and magnitude 4");
+            check(!vm.SyncMountOnCentering, "Sync toggle reflects the existing No Sync profile setting");
+            vm.SyncMountOnCentering = true;
+            check(!ts.NoSync && !new FocusTargetCentering(profile, cameraInfo, new Coordinates(0, 89, Epoch.J2000, Coordinates.RAType.Degrees)).Parameter.NoSync,
+                "Sync toggle updates NINA's shared profile and the next centering plan");
+            vm.SyncMountOnCentering = false;
+            vm.IsMoving = true; vm.SyncMountOnCentering = true;
+            check(!vm.SyncMountOnCentering && ts.NoSync, "Busy focus controls cannot change the shared Sync setting");
+            vm.IsMoving = false;
+            int syncNotifications = 0;
+            vm.PropertyChanged += (_,e)=>{if(e.PropertyName==nameof(vm.SyncMountOnCentering))syncNotifications++;};
+            ts.NoSync = false; vm.UpdateDeviceInfo(mountInfo);
+            check(vm.SyncMountOnCentering && syncNotifications > 0, "Changes made in NINA's No Sync option refresh the Live Focus toggle");
+            ts.NoSync = true; vm.UpdateDeviceInfo(mountInfo);
             vm.MaximumFocusMagnitude = double.NaN; vm.MaximumFocusMagnitude = double.PositiveInfinity;
             check(vm.MaximumFocusMagnitude == 4, "Non-finite magnitude input preserves the current filter");
             vm.MaximumFocusMagnitude = -3;
@@ -186,8 +204,19 @@ internal static class VmChecks {
             check(Goto() == 1 && guidingStops == 1 && slews == previousSlews + 1 && guiderState == "Stopped", "Connected guiding is stopped before slew and stays stopped after centering"); Idle();
             foreach(string state in new[]{"Stopped", "Looping", "Selected"}) {
                 guiderState = state;
-                check(Goto() == 1, "PHD2's false StopGuiding result is accepted only for an already idle state: " + state); Idle();
+                int stopsBefore = guidingStops;
+                check(Goto() == 1 && guidingStops == stopsBefore, "Already idle guider skips StopGuiding entirely: " + state); Idle();
             }
+            foreach(bool throws in new[]{false,true}) {
+                guiderInfo.Connected = true; guiderState = "Guiding"; disconnectDuringStop = true; throwDuringStop = throws;
+                check(Goto() == 1, "Disconnect during guider stop does not reject a completed move (throw=" + throws + ")"); Idle();
+            }
+            disconnectDuringStop = false; guiderInfo.Connected = true; guiderState = "Guiding"; idleDuringStop = true;
+            check(Goto() == 1, "Stop exception is harmless when the guider is now confirmed stopped"); Idle();
+            idleDuringStop = false; guiderState = "Guiding"; previousSlews = slews;
+            try { Goto(); throw new Exception("expected stop exception"); } catch(InvalidOperationException) { }
+            check(slews == previousSlews, "Connected active guider stop exception prevents mount movement"); Idle();
+            throwDuringStop = false;
             stopGuidingFails = true;
             foreach(string state in new[]{"Guiding", "Calibrating", "LostLock", "Paused", ""}) {
                 guiderState = state; previousSlews = slews; int previousCenters = centers;

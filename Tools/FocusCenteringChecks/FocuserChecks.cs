@@ -17,7 +17,7 @@ internal static class FocuserChecks {
         if(failure!=null)throw new Exception("Focuser checks failed",failure);
     }
     private static async Task Verify(Action<bool,string> check) {
-        var profiles=Fake.Of<IProfileService>((m,a)=>m.Name=="get_ActiveProfile"?Fake.Of<IProfile>((n,b)=>Fake.Unexpected(n)):
+        var profiles=Fake.Of<IProfileService>((m,a)=>m.Name=="get_ActiveProfile"?Fake.Of<IProfile>((n,b)=>n.Name=="get_TelescopeSettings"?Fake.Properties<ITelescopeSettings>(new(){["NoSync"]=true}):Fake.Unexpected(n)):
             m.Name.StartsWith("add_")||m.Name.StartsWith("remove_")?null:Fake.Unexpected(m));
         var camera=Fake.Of<ICameraMediator>((m,a)=>m.Name switch {"GetInfo"=>new CameraInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var info=new FocuserInfo{Connected=true,DeviceId="fake.motor",Position=10000};

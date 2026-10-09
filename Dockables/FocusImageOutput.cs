@@ -25,6 +25,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
                 showInNinaImage = value;
                 lastImageOutput = 0;
                 RaisePropertyChanged();
+                UpdateMainRoiEditor();
                 QueueMainImageOutput();
             }
         }

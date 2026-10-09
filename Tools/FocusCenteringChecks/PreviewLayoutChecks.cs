@@ -102,6 +102,10 @@ internal static partial class PreviewDisplayChecks {
                 "Optional graphs appear below narrow images or beside wide images at "+label);
             toggle.IsChecked=false;setup.IsExpanded=true;view.UpdateLayout();
             if(width==350 && height==500) {
+                var sync=(ToggleButton)view.FindName("SyncMountToggle");
+                sync.IsChecked=true;
+                check(vm.SyncMountOnCentering,"The visible Sync mount switch updates the shared profile setting");
+                sync.IsChecked=false;
                 view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);
                 magnitudeInput.Text="1.5";magnitudeInput.GetBindingExpression(TextBox.TextProperty).UpdateSource();
                 check(vm.MaximumFocusMagnitude==1.5,"Magnitude input commits the user's brightness limit");

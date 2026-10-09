@@ -20,16 +20,17 @@ internal static partial class PreviewDisplayChecks {
         void Selecting(bool value)=>type.GetProperty(nameof(vm.IsSelectingRoi)).SetValue(vm,value);
         ImageSource Render(BahtinovMeasurement mask=null)=>(ImageSource)render.Invoke(vm,new object[]{raw,256,256,mask,null});
         var preview=Render();
-        check(!vm.ShowInNinaImage && output().Count==0,"Local preview mode never touches the host viewer during normal preview");
+        int baseline=output().Count;
+        check(!vm.ShowInNinaImage,"Local preview mode keeps live output disabled");
         vm.ShowInNinaImage=true;
-        check(output().Count==0,"Enabling output while idle does not overwrite a normal capture");
+        check(output().Count==baseline,"Enabling output while idle does not overwrite a normal capture");
         type.GetField("assistRunning",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(vm,true);
         source.SetValue(vm,preview);
-        check(output().Count==0,"ROI capture and selection operations cannot publish as a live stream");
+        check(output().Count==baseline,"ROI capture and selection operations cannot publish as a live stream");
         Running(true);source.SetValue(vm,preview);
         var first=output();
         var bytes=new byte[256*256];first.Image.CopyPixels(bytes,256,0);
-        check(first.Count==1 && ReferenceEquals(first.Image,vm.FocusPreviewImage) && first.Image.IsFrozen && first.Image.PixelWidth==256 && first.Image.PixelHeight==256 && bytes.SequenceEqual(FocusDisplayStretch.Render(raw)),
+        check(first.Count==baseline+1 && ReferenceEquals(first.Image,vm.FocusPreviewImage) && first.Image.IsFrozen && first.Image.PixelWidth==256 && first.Image.PixelHeight==256 && bytes.SequenceEqual(FocusDisplayStretch.Render(raw)),
             "NINA Image reuses the exact frozen ROI bitmap without duplicate pixel buffers or raw-image preparation");
         int before=output().Count;
         for(int i=0;i<50;i++)source.SetValue(vm,preview);
@@ -46,8 +47,9 @@ internal static partial class PreviewDisplayChecks {
         Stopping(true);await Dispatcher.Yield(DispatcherPriority.Background);
         check(output().Count==before,"Stop prevents a queued frame from replacing the shared main image");
         Stopping(false);Selecting(true);
+        before=output().Count;
         vm.ShowInNinaImage=false;vm.ShowInNinaImage=true;source.SetValue(vm,preview);
-        check(output().Count==before,"Full-frame ROI editing stays local and never replaces the main live image");
+        check(output().Count==before+1 && ReferenceEquals(output().Image,vm.LiveDisplayImage),"Explicit ROI editing publishes the overview once and blocks live stream frames");
         Selecting(false);vm.ShowInNinaImage=false;vm.ShowInNinaImage=true;
         before=output().Count;Running(false);
         vm.PreviewStretchStrength=.5;await Task.Delay(250);
