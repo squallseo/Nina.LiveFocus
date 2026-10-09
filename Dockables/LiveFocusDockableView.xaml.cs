@@ -26,7 +26,8 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             InitializeComponent();
             // Scroll only the controls when the dock is short; keep the chart in
             // a finite star-sized row so it can fill a larger dock.
-            LayoutRoot.SizeChanged += (_, _) => ControlsScrollViewer.MaxHeight = Math.Max(64, LayoutRoot.ActualHeight - 160);
+            LayoutRoot.SizeChanged += (_, _) => ControlsScrollViewer.MaxHeight = Math.Max(96,
+                LayoutRoot.ActualHeight - Math.Min(320, LayoutRoot.ActualHeight * .62));
             Loaded += OnLoaded;
             DataContextChanged += OnDataContextChanged;
         }
@@ -126,12 +127,45 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             roiDragStart = null; UpdateRoiCursor(e);
         }
         private void OnPreviewSizeChanged(object sender, SizeChangedEventArgs e) => DrawRoiOutline();
+        private void OnPreviewWorkspaceSizeChanged(object sender, SizeChangedEventArgs e) => UpdatePreviewLayout();
+        private void OnMeasurementsChanged(object sender, RoutedEventArgs e) => UpdatePreviewLayout();
+        private (bool Stacked, bool Selecting, bool ShowMeasurements)? previewLayout;
+        private void UpdatePreviewLayout()
+        {
+            if (PreviewCard == null || MeasurementsPanel == null || MeasurementsToggle == null || CompactMetric == null) return;
+            bool stacked = PreviewWorkspace.ActualWidth < 600;
+            bool selecting = DataContext is LiveFocusDockableVM vm && vm.IsSelectingRoi;
+            bool showMeasurements = !stacked || MeasurementsToggle.IsChecked == true;
+            var layout = (stacked, selecting, showMeasurements);
+            if (previewLayout == layout) return;
+            previewLayout = layout;
+            MeasurementsToggle.Visibility = stacked && !selecting ? Visibility.Visible : Visibility.Collapsed;
+            CompactMetric.Visibility = stacked && !showMeasurements && !selecting ? Visibility.Visible : Visibility.Collapsed;
+            PreviewWorkspace.ColumnDefinitions[0].Width = new GridLength(stacked ? 1 : 3, GridUnitType.Star);
+            PreviewWorkspace.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(2, GridUnitType.Star);
+            PreviewWorkspace.RowDefinitions[1].Height = new GridLength(stacked && showMeasurements && !selecting ? 150 : 0);
+            Grid.SetColumnSpan(PreviewCard, stacked || selecting ? 2 : 1);
+            Grid.SetRowSpan(PreviewCard, selecting ? 2 : 1);
+            PreviewCard.Margin = selecting ? new Thickness(0) : stacked ? new Thickness(0, 0, 0, 8) : new Thickness(0, 0, 8, 0);
+            MeasurementsPanel.Visibility = selecting || !showMeasurements ? Visibility.Collapsed : Visibility.Visible;
+            Grid.SetRow(MeasurementsPanel, stacked ? 1 : 0);
+            Grid.SetColumn(MeasurementsPanel, stacked ? 0 : 1);
+            Grid.SetColumnSpan(MeasurementsPanel, stacked ? 2 : 1);
+            MeasurementsPanel.ColumnDefinitions[1].Width = stacked ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+            MeasurementsPanel.RowDefinitions[0].Height = new GridLength(stacked ? 1 : 2, GridUnitType.Star);
+            MeasurementsPanel.RowDefinitions[1].Height = stacked ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+            Grid.SetRow(ProfileCard, stacked ? 0 : 1);
+            Grid.SetColumn(ProfileCard, stacked ? 1 : 0);
+            HfrCard.Margin = stacked ? new Thickness(0, 0, 8, 0) : new Thickness(0, 0, 0, 8);
+        }
         private void OnRoiPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(LiveFocusDockableVM.IsSelectingRoi)) UpdatePreviewLayout();
             if (e.PropertyName is "PreviewRoiRectangle" or "IsSelectingRoi" or "LiveDisplayImage") DrawRoiOutline();
         }
         private void DrawRoiOutline()
         {
+            UpdatePreviewLayout();
             if (RoiOutline == null) return;
             if (DataContext is not LiveFocusDockableVM vm || !vm.IsSelectingRoi || vm.SelectionSensorWidth < 32 || vm.SelectionSensorHeight < 32)
             {

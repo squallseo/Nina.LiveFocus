@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<UserControl x:Class="Cwseo.NINA.LiveFocus.Dockables.LiveFocusDockableView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:local="clr-namespace:Cwseo.NINA.LiveFocus.Dockables" xmlns:ninactrl="clr-namespace:NINA.CustomControlLibrary;assembly=NINA.CustomControlLibrary" xmlns:enum="clr-namespace:NINA.Core.Enum;assembly=NINA.Core" xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core" xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Contrib.Wpf" xmlns:oxys="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf.Shared" xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core" xmlns:wpfutil="clr-namespace:NINA.WPF.Base.Utility;assembly=NINA.WPF.Base" mc:Ignorable="d" d:DesignHeight="700" d:DesignWidth="650">
+<UserControl x:Class="Cwseo.NINA.LiveFocus.Dockables.LiveFocusDockableView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:local="clr-namespace:Cwseo.NINA.LiveFocus.Dockables" xmlns:ninactrl="clr-namespace:NINA.CustomControlLibrary;assembly=NINA.CustomControlLibrary" xmlns:enum="clr-namespace:NINA.Core.Enum;assembly=NINA.Core" xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core" xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Contrib.Wpf" xmlns:oxys="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf.Shared" xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core" xmlns:wpfutil="clr-namespace:NINA.WPF.Base.Utility;assembly=NINA.WPF.Base" mc:Ignorable="d" d:DesignHeight="700" d:DesignWidth="650" Foreground="{DynamicResource PrimaryBrush}" FontFamily="Segoe UI" FontSize="12">
   <UserControl.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
@@ -8,6 +7,7 @@
         <wpfutil:SharedResourceDictionary Source="/NINA.WPF.Base;component/Resources/StaticResources/Converters.xaml" />
         <wpfutil:SharedResourceDictionary Source="/NINA.WPF.Base;component/Resources/StaticResources/ProfileService.xaml" />
         <wpfutil:SharedResourceDictionary Source="/NINA.WPF.Base;component/Resources/Styles/CheckBox.xaml" />
+        <wpfutil:SharedResourceDictionary Source="/NINA.WPF.Base;component/Resources/Styles/ComboBox.xaml" />
       </ResourceDictionary.MergedDictionaries>
       <SolidColorBrush x:Key="FocusRoiBrush" Color="#FFD54F" />
       <Style x:Key="FocusCard" TargetType="Border">
@@ -68,6 +68,35 @@
           </Setter.Value>
         </Setter>
       </Style>
+      <Style x:Key="FocusTrackButton" TargetType="RepeatButton">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RepeatButton"><Border Background="{TemplateBinding Background}" Height="3" VerticalAlignment="Center" CornerRadius="1.5"/></ControlTemplate></Setter.Value></Setter>
+      </Style>
+      <Style TargetType="Slider">
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="IsMoveToPointEnabled" Value="True"/>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="Slider">
+              <Grid x:Name="SliderSurface" Background="Transparent">
+                <Track x:Name="PART_Track" VerticalAlignment="Center" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
+                  <Track.DecreaseRepeatButton><RepeatButton Command="Slider.DecreaseLarge" Style="{StaticResource FocusTrackButton}" Background="{StaticResource SecondaryBrush}"/></Track.DecreaseRepeatButton>
+                  <Track.IncreaseRepeatButton><RepeatButton Command="Slider.IncreaseLarge" Style="{StaticResource FocusTrackButton}" Background="{StaticResource BorderBrush}"/></Track.IncreaseRepeatButton>
+                  <Track.Thumb>
+                    <Thumb Width="10" Height="18">
+                      <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="{StaticResource PrimaryBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="3"/></ControlTemplate></Thumb.Template>
+                    </Thumb>
+                  </Track.Thumb>
+                </Track>
+              </Grid>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsEnabled" Value="False"><Setter TargetName="PART_Track" Property="Opacity" Value="0.4"/></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="SliderSurface" Property="Background" Value="{StaticResource ButtonBackgroundSelectedBrush}"/></Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
       <Style x:Key="FocusSwitch" TargetType="ToggleButton">
         <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
         <Setter Property="Template">
@@ -98,27 +127,114 @@
       </Style>
     </ResourceDictionary>
   </UserControl.Resources>
-  <Grid x:Name="LayoutRoot" Margin="6">
+  <Grid x:Name="LayoutRoot" Margin="8" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Cwseo.NINA.LiveFocus.Dockables" xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Contrib.Wpf">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
     <ScrollViewer x:Name="ControlsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
       <StackPanel>
+        <Border Style="{StaticResource FocusCard}" Padding="10" Margin="0,0,0,8">
+          <StackPanel x:Name="SharedCaptureControls">
+            <Grid Margin="0,0,0,8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="56" />
+                <ColumnDefinition Width="22" />
+              </Grid.ColumnDefinitions>
+              <Button x:Name="LiveVideoButton" Width="36" Height="32" Padding="5" Margin="0,0,10,0" ToolTipService.ShowOnDisabled="True">
+                <Button.Style>
+                  <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
+                    <Setter Property="Command" Value="{Binding StartFocusPreviewCommand}" />
+                    <Setter Property="ToolTip" Value="Start live focus" />
+                    <Setter Property="AutomationProperties.Name" Value="Start live focus" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
+                        <Setter Property="Command" Value="{Binding StopFocusPreviewCommand}" />
+                        <Setter Property="ToolTip" Value="Stop live focus" />
+                        <Setter Property="AutomationProperties.Name" Value="Stop live focus" />
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding IsStoppingFocusPreview}" Value="True">
+                        <Setter Property="IsEnabled" Value="False" />
+                        <Setter Property="ToolTip" Value="Stopping; waiting for the camera" />
+                        <Setter Property="AutomationProperties.Name" Value="Stopping live focus" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Button.Style>
+                <Viewbox Width="18" Height="18" Stretch="Uniform">
+                  <Path Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}">
+                    <Path.Style>
+                      <Style TargetType="Path">
+                        <Setter Property="Data" Value="M 1,2 L 13,2 Q 15,2 15,4 L 15,12 Q 15,14 13,14 L 1,14 Q 0,14 0,12 L 0,4 Q 0,2 1,2 Z M 16,5 L 22,2 L 22,14 L 16,11 Z" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
+                            <Setter Property="Data" Value="{StaticResource CancelSVG}" />
+                          </DataTrigger>
+                          <DataTrigger Binding="{Binding IsStoppingFocusPreview}" Value="True">
+                            <Setter Property="Data" Value="{StaticResource HourglassSVG}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Path.Style>
+                  </Path>
+                </Viewbox>
+              </Button>
+              <TextBlock Grid.Column="1" Text="Exposure" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource SecondaryBrush}" />
+              <Slider x:Name="ExposureSlider" Grid.Column="2" Minimum="1" Maximum="5000" SmallChange="50" LargeChange="50" TickFrequency="50" IsSnapToTickEnabled="True" Value="{Binding PreviewExposureMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanConfigureLive}" VerticalAlignment="Center" Margin="0,0,10,0" AutomationProperties.Name="Exposure milliseconds" Ticks="1,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1050,1100,1150,1200,1250,1300,1350,1400,1450,1500,1550,1600,1650,1700,1750,1800,1850,1900,1950,2000,2050,2100,2150,2200,2250,2300,2350,2400,2450,2500,2550,2600,2650,2700,2750,2800,2850,2900,2950,3000,3050,3100,3150,3200,3250,3300,3350,3400,3450,3500,3550,3600,3650,3700,3750,3800,3850,3900,3950,4000,4050,4100,4150,4200,4250,4300,4350,4400,4450,4500,4550,4600,4650,4700,4750,4800,4850,4900,4950,5000" />
+              <TextBox Grid.Column="3" Text="{Binding PreviewExposureMs, StringFormat=F0, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanConfigureLive}" AutomationProperties.Name="Exposure milliseconds" TextAlignment="Right" />
+              <TextBlock Grid.Column="4" Text="ms" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
+            </Grid>
+            <WrapPanel>
+              <Button x:Name="EditRoiButton" Margin="0,0,8,0">
+                <Button.Style>
+                  <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
+                    <Setter Property="Content" Value="Edit ROI" />
+                    <Setter Property="Command" Value="{Binding SelectRoiCommand}" />
+                    <Setter Property="ToolTip" Value="Open the full image. Click a star, move the yellow box or drag its edges to resize." />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
+                        <Setter Property="Content" Value="Retake" />
+                        <Setter Property="Command" Value="{Binding RefreshRoiImageCommand}" />
+                        <Setter Property="ToolTip" Value="Replace the full image with a new exposure." />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Button.Style>
+              </Button>
+              <Button Content="Auto ROI" Command="{Binding AutoRoiCommand}" Style="{StaticResource FocusButton}" Margin="0,0,8,0" ToolTip="Find a star near the selected area and size its box. With Bahtinov overlay enabled, include the mask pattern. Stop preview before selecting." />
+              <ComboBox Width="88" SelectedValuePath="Tag" SelectedValue="{Binding PreviewRoiPreset, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" MinHeight="28" Margin="0,0,8,0" ToolTip="ROI preset. For a custom size, drag the edges of the yellow box." AutomationProperties.Name="ROI size preset">
+                <ComboBoxItem Content="256 px" Tag="256" />
+                <ComboBoxItem Content="512 px" Tag="512" />
+                <ComboBoxItem Content="1024 px" Tag="1024" />
+                <ComboBoxItem Content="Custom" Tag="Custom" />
+              </ComboBox>
+              <Button x:Name="ConfirmRoiButton" Content="Done" Command="{Binding ConfirmRoiCommand}" Style="{StaticResource FocusButton}" Visibility="{Binding IsSelectingRoi, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Keep this star area and return to live preview." />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
         <local:FocusCardsPanel>
-          <Border Style="{StaticResource FocusCard}">
+          <Border Style="{StaticResource FocusCard}" Padding="10">
             <StackPanel>
-              <TextBlock Text="Focuser" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" />
-              <WrapPanel Margin="0,0,0,5">
-                <TextBlock Text="Position" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{StaticResource SecondaryBrush}" />
-                <TextBlock Text="{Binding FocuserInfo.Position}" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,12,0" />
-                <TextBox Text="{Binding TargetPosition, UpdateSourceTrigger=LostFocus}" Width="70" Margin="0,0,4,0" />
-                <Button Content="Move" Command="{Binding MoveToPositionCommand}" Style="{StaticResource FocusButton}" />
+              <DockPanel Margin="0,0,0,8">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                  <TextBlock Text="Position" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                  <TextBlock Text="{Binding FocuserInfo.Position, FallbackValue=—, TargetNullValue=—}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Text="Focuser" FontWeight="SemiBold" FontSize="13" />
+              </DockPanel>
+              <WrapPanel Margin="0,0,0,6">
+                <TextBlock Text="Target" Width="40" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
+                <TextBox Text="{Binding TargetPosition, UpdateSourceTrigger=LostFocus}" Width="68" Margin="0,0,8,0" AutomationProperties.Name="Target focuser position" ToolTip="Absolute focuser position." />
+                <Button Content="Move" Command="{Binding MoveToPositionCommand}" Style="{StaticResource FocusButton}" Margin="0,0,6,0" />
+                <Button Content="Stop" Command="{Binding HaltFocuserCommand}" Style="{StaticResource FocusButton}" Visibility="{Binding IsMoving, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" ToolTip="Cancel the current focuser move." />
               </WrapPanel>
-              <WrapPanel Margin="0,4,0,0">
-                <TextBlock Text="Step" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{StaticResource SecondaryBrush}" />
-                <TextBox Text="{Binding UserStep, UpdateSourceTrigger=LostFocus}" Width="52" Margin="0,0,4,0" />
-                <Button Content="In −" Margin="0,0,4,0">
+              <WrapPanel>
+                <TextBlock Text="Step" Width="40" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
+                <TextBox Text="{Binding UserStep, UpdateSourceTrigger=LostFocus}" Width="68" Margin="0,0,8,0" AutomationProperties.Name="Focuser step size" />
+                <Button Content="In −" Margin="0,0,6,0" MinWidth="49" ToolTip="Move inward by the step size. Native streaming continues during movement.">
                   <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
                       <Setter Property="Command" Value="{Binding MoveINCommand}" />
@@ -130,7 +246,7 @@
                     </Style>
                   </Button.Style>
                 </Button>
-                <Button Content="Out +" Margin="0,0,4,0">
+                <Button Content="Out +" MinWidth="49" ToolTip="Move outward by the step size. Native streaming continues during movement.">
                   <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
                       <Setter Property="Command" Value="{Binding MoveOUTCommand}" />
@@ -142,231 +258,95 @@
                     </Style>
                   </Button.Style>
                 </Button>
-                <Button Content="Stop" Command="{Binding HaltFocuserCommand}" Style="{StaticResource FocusButton}" Visibility="{Binding IsMoving, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" />
-                <ToggleButton Content="Bahtinov overlay" IsChecked="{Binding AnalyzeBahtinov, Mode=TwoWay}" Style="{StaticResource FocusSwitch}" Margin="0,4,0,0" ToolTip="Display detected mask lines while focusing manually. Remove the mask before plate solving." />
               </WrapPanel>
-              <Border Margin="0,8,0,0" Padding="0,8,0,0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
-                <StackPanel x:Name="SharedCaptureControls" Margin="0">
-                  <Grid Margin="0,0,0,6">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="Auto" />
-                      <ColumnDefinition Width="Auto" />
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="52" />
-                      <ColumnDefinition Width="22" />
-                    </Grid.ColumnDefinitions>
-                    <Button Width="36" Height="32" Padding="5" Margin="0,0,8,0" ToolTipService.ShowOnDisabled="True">
-                      <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                          <Setter Property="Command" Value="{Binding StartFocusPreviewCommand}" />
-                          <Setter Property="ToolTip" Value="Start live focus" />
-                          <Setter Property="AutomationProperties.Name" Value="Start live focus" />
-                          <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
-                              <Setter Property="Command" Value="{Binding StopFocusPreviewCommand}" />
-                              <Setter Property="ToolTip" Value="Stop live focus" />
-                              <Setter Property="AutomationProperties.Name" Value="Stop live focus" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsStoppingFocusPreview}" Value="True">
-                              <Setter Property="IsEnabled" Value="False" />
-                              <Setter Property="ToolTip" Value="Stopping; waiting for the camera" />
-                              <Setter Property="AutomationProperties.Name" Value="Stopping live focus" />
-                            </DataTrigger>
-                          </Style.Triggers>
-                        </Style>
-                      </Button.Style>
-                      <Viewbox Width="18" Height="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Path Stretch="Uniform" UseLayoutRounding="True" SnapsToDevicePixels="True" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}">
-                          <Path.Style>
-                            <Style TargetType="Path">
-                              <Setter Property="Data" Value="M 1,2 L 13,2 Q 15,2 15,4 L 15,12 Q 15,14 13,14 L 1,14 Q 0,14 0,12 L 0,4 Q 0,2 1,2 Z M 16,5 L 22,2 L 22,14 L 16,11 Z" />
-                              <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
-                                  <Setter Property="Data" Value="{StaticResource CancelSVG}" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsStoppingFocusPreview}" Value="True">
-                                  <Setter Property="Data" Value="{StaticResource HourglassSVG}" />
-                                </DataTrigger>
-                              </Style.Triggers>
-                            </Style>
-                          </Path.Style>
-                        </Path>
-                      </Viewbox>
-                    </Button>
-                    <TextBlock Grid.Column="1" Text="Exposure" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" Margin="0,0,4,0" />
-                    <Slider Grid.Column="2" Minimum="1" Maximum="5000" SmallChange="50" LargeChange="50" TickFrequency="50" IsSnapToTickEnabled="True" Ticks="1,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1050,1100,1150,1200,1250,1300,1350,1400,1450,1500,1550,1600,1650,1700,1750,1800,1850,1900,1950,2000,2050,2100,2150,2200,2250,2300,2350,2400,2450,2500,2550,2600,2650,2700,2750,2800,2850,2900,2950,3000,3050,3100,3150,3200,3250,3300,3350,3400,3450,3500,3550,3600,3650,3700,3750,3800,3850,3900,3950,4000,4050,4100,4150,4200,4250,4300,4350,4400,4450,4500,4550,4600,4650,4700,4750,4800,4850,4900,4950,5000" Value="{Binding PreviewExposureMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanConfigureLive}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <TextBox Grid.Column="3" Text="{Binding PreviewExposureMs, StringFormat=F0, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanConfigureLive}" VerticalContentAlignment="Center" MinHeight="26" />
-                    <TextBlock Grid.Column="4" Text="ms" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
-                  </Grid>
-                  <Grid Margin="0,0,0,6">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="Auto" />
-                      <ColumnDefinition Width="Auto" />
-                      <ColumnDefinition Width="90" />
-                      <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Button Margin="0,0,10,0">
-                      <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                          <Setter Property="Content" Value="Select ROI" />
-                          <Setter Property="Command" Value="{Binding SelectRoiCommand}" />
-                          <Setter Property="ToolTip" Value="Open the full image to move or resize the star area with the mouse." />
-                          <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                              <Setter Property="Content" Value="Retake image" />
-                              <Setter Property="Command" Value="{Binding RefreshRoiImageCommand}" />
-                              <Setter Property="ToolTip" Value="Take a new full image if the displayed image is out of date." />
-                            </DataTrigger>
-                          </Style.Triggers>
-                        </Style>
-                      </Button.Style>
-                    </Button>
-                    <Button Grid.Column="1" Content="Auto ROI" Command="{Binding AutoRoiCommand}" Style="{StaticResource FocusButton}" Margin="0,0,10,0" ToolTip="Capture a frame near the selected area and center and size the star box. Stop live focus first. With Bahtinov overlay enabled, the box includes the mask pattern." />
-                    <ComboBox Grid.Column="2" SelectedValuePath="Tag" SelectedValue="{Binding PreviewRoiPreset, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" MinHeight="28" ToolTip="Size of the area around the selected star.">
-                      <ComboBoxItem Content="256 px" Tag="256" />
-                      <ComboBoxItem Content="512 px" Tag="512" />
-                      <ComboBoxItem Content="1024 px" Tag="1024" />
-                      <ComboBoxItem Content="Custom" Tag="Custom" />
-                    </ComboBox>
-                    <Button Grid.Column="3" Content="Done" Command="{Binding ConfirmRoiCommand}" HorizontalAlignment="Right" Margin="6,0,0,0">
-                      <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                          <Setter Property="Visibility" Value="Collapsed" />
-                          <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                              <Setter Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                          </Style.Triggers>
-                        </Style>
-                      </Button.Style>
-                    </Button>
-                  </Grid>
-                  <TextBlock Text="Drag inside the box to move it. Drag an edge or corner to resize, then Done." TextWrapping="Wrap" Margin="0,0,0,6" FontSize="11" Foreground="{StaticResource SecondaryBrush}">
-                    <TextBlock.Style>
-                      <Style TargetType="TextBlock">
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                          <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                            <Setter Property="Visibility" Value="Visible" />
-                          </DataTrigger>
-                        </Style.Triggers>
-                      </Style>
-                    </TextBlock.Style>
-                  </TextBlock>
-                  <Image Source="{Binding RoiSelectionPreview}" Height="70" Stretch="Uniform" Margin="0,4,0,0" ToolTip="Selection zoom from the reduced full-frame image.">
-                    <Image.Style>
-                      <Style TargetType="Image">
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                          <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                            <Setter Property="Visibility" Value="Visible" />
-                          </DataTrigger>
-                        </Style.Triggers>
-                      </Style>
-                    </Image.Style>
-                  </Image>
-                </StackPanel>
-              </Border>
             </StackPanel>
           </Border>
-          <StackPanel Grid.Row="1">
-            <Border Style="{StaticResource FocusCard}">
-              <StackPanel>
-                <Grid>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Text="Focus star" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <TextBlock Text="Alt ≥" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{StaticResource SecondaryBrush}" />
-                    <TextBox Width="38" MinHeight="26" VerticalContentAlignment="Center" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" ToolTip="Minimum star altitude; refresh after changing this value." />
-                    <TextBlock Text="°" VerticalAlignment="Center" Margin="3,0,0,0" />
-                  </StackPanel>
-                </Grid>
-                <Grid Margin="0,6,0,0">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <ComboBox MinHeight="28" ItemsSource="{Binding FocusTargets}" SelectedItem="{Binding SelectedFocusTarget}" MaxDropDownHeight="240" ToolTip="Select a focus star. The list loads automatically when this panel opens.">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshFocusTargetsCommand}" Style="{StaticResource FocusButton}" Margin="5,0,0,0" ToolTip="Refresh visible focus stars using the current time and profile location." />
-                  <Button Grid.Column="2" Content="GOTO" Command="{Binding GotoFocusTargetCommand}" Style="{StaticResource FocusButton}" Margin="5,0,0,0" ToolTip="{Binding GotoFocusTargetTooltip}" ToolTipService.ShowOnDisabled="True" />
-                </Grid>
-                <Grid Margin="0,4,0,0">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Text="{Binding FocusTargetStatus}" TextTrimming="CharacterEllipsis" ToolTip="{Binding FocusTargetStatus}" Foreground="{StaticResource SecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
-                  <Button Grid.Column="1" Content="Stop GOTO" Command="{Binding CancelGotoCommand}" Style="{StaticResource FocusButton}" Margin="5,0,0,0" Visibility="{Binding IsGoingToFocusTarget, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" />
-                </Grid>
-              </StackPanel>
-            </Border>
-          </StackPanel>
+          <Border Grid.Row="1" Style="{StaticResource FocusCard}" Padding="10">
+            <StackPanel>
+              <DockPanel Margin="0,0,0,8">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                  <TextBlock Text="Alt ≥" FontSize="11" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                  <TextBox Width="38" MinHeight="26" Text="{Binding MinimumFocusAltitude, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Minimum star altitude" ToolTip="Minimum altitude in degrees. Refresh after changing." />
+                  <TextBlock Text="°" VerticalAlignment="Center" Margin="3,0,0,0" />
+                </StackPanel>
+                <TextBlock Text="Focus star" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+              </DockPanel>
+              <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ComboBox x:Name="FocusStarPicker" MinHeight="28" ItemsSource="{Binding FocusTargets}" SelectedItem="{Binding SelectedFocusTarget}" MaxDropDownHeight="240" AutomationProperties.Name="Focus star" ToolTip="Stars above the minimum altitude and your profile horizon.">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" FontSize="11" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="1" Width="28" Padding="5" Style="{StaticResource FocusButton}" Command="{Binding RefreshFocusTargetsCommand}" Margin="6,0,0,0" ToolTip="Refresh visible focus stars using the current time and profile location." AutomationProperties.Name="Refresh focus stars">
+                  <Viewbox Width="14" Height="14">
+                    <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 16,2 L 16,7 L 11,7 L 13,5 A 6,6 0 1 0 14,11 L 16,11 A 8,8 0 1 1 14.5,3.5 Z" />
+                  </Viewbox>
+                </Button>
+                <Button x:Name="GotoButton" Grid.Column="2" Width="58" Margin="6,0,0,0" ToolTipService.ShowOnDisabled="True">
+                  <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
+                      <Setter Property="Content" Value="GOTO" />
+                      <Setter Property="Command" Value="{Binding GotoFocusTargetCommand}" />
+                      <Setter Property="ToolTip" Value="{Binding GotoFocusTargetTooltip}" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsGoingToFocusTarget}" Value="True">
+                          <Setter Property="Content" Value="Cancel" />
+                          <Setter Property="Command" Value="{Binding CancelGotoCommand}" />
+                          <Setter Property="ToolTip" Value="Cancel the slew or plate-solve centering." />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Button.Style>
+                </Button>
+              </Grid>
+              <TextBlock Text="{Binding FocusTargetStatus}" TextTrimming="CharacterEllipsis" ToolTip="{Binding FocusTargetStatus}" Foreground="{StaticResource SecondaryBrush}" FontSize="11" MinHeight="18" />
+            </StackPanel>
+          </Border>
         </local:FocusCardsPanel>
       </StackPanel>
     </ScrollViewer>
-    <Grid Grid.Row="1" MinHeight="140">
+    <Grid x:Name="PreviewWorkspace" Grid.Row="1" MinHeight="160" Margin="0,2,0,0" SizeChanged="OnPreviewWorkspaceSizeChanged">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="3*" />
+        <ColumnDefinition Width="2*" />
       </Grid.ColumnDefinitions>
       <Grid.RowDefinitions>
-        <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
+        <RowDefinition Height="0" />
       </Grid.RowDefinitions>
-      <DockPanel Grid.ColumnSpan="2" Margin="0,0,0,5">
-        <DockPanel.Style>
-          <Style TargetType="DockPanel">
-            <Style.Triggers>
-              <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                <Setter Property="Visibility" Value="Collapsed" />
-              </DataTrigger>
-            </Style.Triggers>
-          </Style>
-        </DockPanel.Style>
-        <Button DockPanel.Dock="Right" Content="Clear graph" Command="{Binding ClearLiveGraphCommand}" Style="{StaticResource FocusButton}" />
-        <TextBlock Text="{Binding LiveHfrText}" VerticalAlignment="Center" Foreground="{StaticResource PrimaryBrush}" ToolTip="Live star preview and local HFR history. Select or resize the ROI while stopped." />
-      </DockPanel>
-      <Grid Grid.Row="1" Margin="0,0,6,0">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="2*" />
-          <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <Grid.Style>
-          <Style TargetType="Grid">
-            <Setter Property="Grid.ColumnSpan" Value="1" />
-            <Style.Triggers>
-              <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                <Setter Property="Grid.ColumnSpan" Value="2" />
-              </DataTrigger>
-            </Style.Triggers>
-          </Style>
-        </Grid.Style>
+      <Border x:Name="PreviewCard" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,0,8,0">
         <Grid>
-          <Grid.Style>
-            <Style TargetType="Grid">
-              <Setter Property="Grid.RowSpan" Value="1" />
-              <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                  <Setter Property="Grid.RowSpan" Value="2" />
-                </DataTrigger>
-              </Style.Triggers>
-            </Style>
-          </Grid.Style>
           <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
-          <Grid x:Name="PreviewSurface" Background="Transparent" MouseLeftButtonDown="OnPreviewDown" MouseMove="OnPreviewMove" MouseLeftButtonUp="OnPreviewUp" LostMouseCapture="OnPreviewCaptureLost" SizeChanged="OnPreviewSizeChanged">
+          <StackPanel Margin="0,0,0,6">
+          <DockPanel>
+            <ToggleButton x:Name="MeasurementsToggle" DockPanel.Dock="Right" Content="Graphs" Style="{StaticResource FocusSwitch}" IsChecked="False" Checked="OnMeasurementsChanged" Unchecked="OnMeasurementsChanged" Margin="8,0,0,0" ToolTip="Show HFR history and the star profile below the image."/>
+          <TextBlock FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Text" Value="Star preview" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
+                    <Setter Property="Text" Value="Move the yellow box or drag its edges, then Done." />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+          </DockPanel>
+          <TextBlock x:Name="CompactMetric" Text="{Binding LiveHfrText}" FontSize="11" Foreground="{StaticResource SecondaryBrush}" Margin="0,4,0,0"/>
+          </StackPanel>
+          <Grid x:Name="PreviewSurface" Grid.Row="1" Background="#101214" MouseLeftButtonDown="OnPreviewDown" MouseMove="OnPreviewMove" MouseLeftButtonUp="OnPreviewUp" LostMouseCapture="OnPreviewCaptureLost" SizeChanged="OnPreviewSizeChanged">
             <Image x:Name="PreviewImage" Source="{Binding LiveDisplayImage}" SizeChanged="OnPreviewSizeChanged" Stretch="Uniform" ToolTip="{Binding RoiLocationText}">
               <Image.Style>
                 <Style TargetType="Image">
@@ -379,6 +359,18 @@
                 </Style>
               </Image.Style>
             </Image>
+            <TextBlock Text="Select a star area, then press the video button." TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="240" Margin="12" Foreground="{StaticResource SecondaryBrush}">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding LiveDisplayImage}" Value="{x:Null}">
+                      <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
             <Canvas x:Name="RoiHandles" IsHitTestVisible="False" />
             <Canvas IsHitTestVisible="False">
               <Rectangle x:Name="RoiOutline" Visibility="Collapsed" Stroke="{StaticResource FocusRoiBrush}" StrokeThickness="3">
@@ -388,56 +380,80 @@
               </Rectangle>
             </Canvas>
           </Grid>
-          <Grid x:Name="PreviewStretchControls" Grid.Row="1" Margin="2,5,2,4" ToolTip="Display stretch only. Left: darker; right: brighter. Exposure and focus measurements use unchanged raw pixels.">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="Auto" />
-              <ColumnDefinition Width="*" />
-              <ColumnDefinition Width="Auto" />
-              <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock Text="Stretch" VerticalAlignment="Center" FontSize="11" Margin="0,0,6,0" />
-            <Slider Grid.Column="1" Minimum="0.25" Maximum="2.5" Value="{Binding PreviewStretchStrength, Mode=TwoWay}" SmallChange="0.05" LargeChange="0.25" TickFrequency="0.05" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="2" Text="{Binding PreviewStretchText}" Width="39" FontSize="11" TextAlignment="Right" VerticalAlignment="Center" Margin="4,0" />
-            <Button Grid.Column="3" Content="↺" Command="{Binding ResetPreviewStretchCommand}" ToolTip="Reset automatic stretch to 1.00×" MinWidth="24" Height="24" Padding="3,0" />
-          </Grid>
+          <StackPanel Grid.Row="2" Margin="0,8,0,0">
+            <Grid x:Name="PreviewStretchControls" ToolTip="Display only: left is darker, right is brighter. Raw focus measurements are unchanged.">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="Stretch" VerticalAlignment="Center" FontSize="11" Margin="0,0,8,0" />
+              <Slider Grid.Column="1" Minimum="0.25" Maximum="2.5" Value="{Binding PreviewStretchStrength, Mode=TwoWay}" SmallChange="0.05" LargeChange="0.25" TickFrequency="0.05" IsSnapToTickEnabled="True" VerticalAlignment="Center" AutomationProperties.Name="Preview stretch strength" />
+              <TextBlock Grid.Column="2" Text="{Binding PreviewStretchText}" Width="39" FontSize="11" TextAlignment="Right" VerticalAlignment="Center" Margin="6,0" />
+              <Button Grid.Column="3" Command="{Binding ResetPreviewStretchCommand}" Style="{StaticResource FocusButton}" Width="28" Padding="5" Margin="0,0,0,0" ToolTip="Reset automatic stretch to 1.00×" AutomationProperties.Name="Reset preview stretch">
+                <Viewbox Width="14" Height="14">
+                  <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 16,2 L 16,7 L 11,7 L 13,5 A 6,6 0 1 0 14,11 L 16,11 A 8,8 0 1 1 14.5,3.5 Z" />
+                </Viewbox>
+              </Button>
+            </Grid>
+            <ToggleButton Content="Bahtinov overlay" IsChecked="{Binding AnalyzeBahtinov, Mode=TwoWay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,7,0,0" ToolTip="Draw the detected diffraction lines for manual focusing with a Bahtinov mask. Remove the mask before plate solving." />
+          </StackPanel>
         </Grid>
-        <oxy:Plot Grid.Row="1" Background="{StaticResource BackgroundBrush}" PlotAreaBackground="{StaticResource BackgroundBrush}">
-          <oxy:Plot.Style>
-            <Style TargetType="oxy:Plot">
-              <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                  <Setter Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
-              </Style.Triggers>
-            </Style>
-          </oxy:Plot.Style>
-          <oxy:Plot.Axes>
-            <oxy:LinearAxis Position="Bottom" Title="Star profile (px)" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" TitleColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
-            <oxy:LinearAxis Position="Left" Minimum="0" Maximum="1.1" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
-          </oxy:Plot.Axes>
-          <oxy:Plot.Series>
-            <oxy:LineSeries ItemsSource="{Binding LiveStarProfile}" DataFieldX="X" DataFieldY="Y" Color="{Binding Color, Source={StaticResource SecondaryBrush}}" />
-          </oxy:Plot.Series>
-        </oxy:Plot>
+      </Border>
+      <Grid x:Name="MeasurementsPanel" Grid.Column="1">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="0" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="2*" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Border x:Name="HfrCard" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,0,0,8">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <DockPanel Margin="0,0,0,4">
+              <Button DockPanel.Dock="Right" Width="28" Padding="5" Style="{StaticResource FocusButton}" Command="{Binding ClearLiveGraphCommand}" ToolTip="Clear the local HFR history." AutomationProperties.Name="Clear live graph">
+                <Viewbox Width="13" Height="13">
+                  <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M 4,0 L 10,0 L 10,2 L 14,2 L 14,4 L 0,4 L 0,2 L 4,2 Z M 2,5 L 12,5 L 11,15 L 3,15 Z" />
+                </Viewbox>
+              </Button>
+              <TextBlock Text="{Binding LiveHfrText}" FontWeight="SemiBold" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,6,0" />
+            </DockPanel>
+            <oxy:Plot x:Name="PreviewFocusPlot" Grid.Row="1" Background="{StaticResource BackgroundBrush}" PlotAreaBackground="{StaticResource BackgroundBrush}">
+              <oxy:Plot.Axes>
+                <oxy:LinearAxis Position="Bottom" Title="Elapsed seconds" FontSize="10" TitleFontSize="10" StringFormat="0.##" MinimumPadding="0.08" MaximumPadding="0.08" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" TitleColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
+                <oxy:LinearAxis Position="Left" Title="HFR (px)" FontSize="10" TitleFontSize="10" MinimumPadding="0.08" MaximumPadding="0.08" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" TitleColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
+              </oxy:Plot.Axes>
+              <oxy:Plot.Series>
+                <oxy:LineSeries ItemsSource="{Binding LiveHfrPoints}" DataFieldX="X" DataFieldY="Y" Color="{Binding Color, Source={StaticResource FocusRoiBrush}}" StrokeThickness="1.5" MarkerType="Circle" MarkerSize="2" MarkerFill="{Binding Color, Source={StaticResource FocusRoiBrush}}" />
+              </oxy:Plot.Series>
+            </oxy:Plot>
+          </Grid>
+        </Border>
+        <Border x:Name="ProfileCard" Grid.Row="1" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Star profile" FontWeight="SemiBold" FontSize="11" Margin="0,0,0,4" />
+            <oxy:Plot Grid.Row="1" Background="{StaticResource BackgroundBrush}" PlotAreaBackground="{StaticResource BackgroundBrush}">
+              <oxy:Plot.Axes>
+                <oxy:LinearAxis Position="Bottom" Title="Distance (px)" FontSize="10" TitleFontSize="10" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" TitleColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
+                <oxy:LinearAxis Position="Left" Minimum="0" Maximum="1.1" FontSize="10" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
+              </oxy:Plot.Axes>
+              <oxy:Plot.Series>
+                <oxy:LineSeries ItemsSource="{Binding LiveStarProfile}" DataFieldX="X" DataFieldY="Y" Color="{Binding Color, Source={StaticResource PrimaryBrush}}" />
+              </oxy:Plot.Series>
+            </oxy:Plot>
+          </Grid>
+        </Border>
       </Grid>
-      <oxy:Plot x:Name="PreviewFocusPlot" Grid.Row="1" Grid.Column="1" Background="{StaticResource BackgroundBrush}" PlotAreaBackground="{StaticResource BackgroundBrush}" ToolTip="Live star preview and local HFR history. Select or resize the ROI while stopped.">
-        <oxy:Plot.Style>
-          <Style TargetType="oxy:Plot">
-            <Style.Triggers>
-              <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                <Setter Property="Visibility" Value="Collapsed" />
-              </DataTrigger>
-            </Style.Triggers>
-          </Style>
-        </oxy:Plot.Style>
-        <oxy:Plot.Axes>
-          <oxy:LinearAxis Key="FocusPosition" Position="Bottom" Title="Elapsed seconds" StringFormat="0.##" MinimumPadding="0.08" MaximumPadding="0.08" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" TitleColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
-          <oxy:LinearAxis Position="Left" Title="Local HFR (px)" MinimumPadding="0.08" MaximumPadding="0.08" TextColor="{Binding Color, Source={StaticResource PrimaryBrush}}" TitleColor="{Binding Color, Source={StaticResource PrimaryBrush}}" />
-        </oxy:Plot.Axes>
-        <oxy:Plot.Series>
-          <oxy:LineSeries ItemsSource="{Binding LiveHfrPoints}" DataFieldX="X" DataFieldY="Y" Color="{Binding Color, Source={StaticResource SecondaryBrush}}" StrokeThickness="1" MarkerType="Circle" MarkerSize="2" MarkerFill="{Binding Color, Source={StaticResource SecondaryBrush}}" />
-        </oxy:Plot.Series>
-      </oxy:Plot>
     </Grid>
   </Grid>
 </UserControl>

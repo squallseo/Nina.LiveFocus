@@ -59,7 +59,7 @@ namespace Cwseo.NINA.LiveFocus.Dockables
             get
             {
                 if (disposed) return "The focus panel is closed.";
-                if (isGoingToFocusTarget) return "GOTO/centering is running. Use Stop GOTO to cancel.";
+                if (isGoingToFocusTarget) return "GOTO/centering is running. Use Cancel to stop.";
                 if (SelectedFocusTarget == null) return "Select a focus star. Use Refresh if the list is empty.";
                 if (TelescopeInfo?.Connected != true) return "Connect the mount.";
                 if (TelescopeInfo.AtPark) return "Unpark the mount in NINA's telescope controls.";

@@ -41,7 +41,7 @@ internal static partial class PreviewDisplayChecks {
         Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory,"Database","Migration"));
         var profiles=Fake.Of<IProfileService>((m,a)=>m.Name=="get_ActiveProfile"?Fake.Of<IProfile>((n,b)=>Fake.Unexpected(n)):
             m.Name.StartsWith("add_")||m.Name.StartsWith("remove_")?null:Fake.Unexpected(m));
-        var camera=Fake.Of<ICameraMediator>((m,a)=>m.Name switch {"GetInfo"=>new CameraInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
+        var camera=Fake.Of<ICameraMediator>((m,a)=>m.Name switch {"GetInfo"=>new CameraInfo(),"IsFreeToCapture"=>true,"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var motor=Fake.Of<IFocuserMediator>((m,a)=>m.Name switch {"GetInfo"=>new FocuserInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var mount=Fake.Of<ITelescopeMediator>((m,a)=>m.Name switch {"GetInfo"=>new TelescopeInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});
         var guider=Fake.Of<IGuiderMediator>((m,a)=>m.Name switch {"GetInfo"=>new GuiderInfo(),"RegisterConsumer" or "RemoveConsumer"=>null,_=>Fake.Unexpected(m)});

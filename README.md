@@ -2,6 +2,10 @@
 
 A NINA plugin for moving the focuser while watching a live star image.
 
+![Live Focus layout](docs/live-focus-ui.png)
+
+Example layout rendered with synthetic test data. In a narrow dock, the image fills the width; use **Graphs** to show measurements below it. Wider docks show the preview and plots side by side.
+
 ## Features
 
 - Absolute focuser position, adjustable In / Out steps and cancellation.
@@ -49,7 +53,7 @@ NINA supplies its own libraries; do not copy every dependency from the build dir
 ## Using it
 
 1. Connect the camera and focuser. Optionally choose a focus star and use GOTO. Remove a Bahtinov mask for plate solving.
-2. Choose **Select ROI** to edit the full image, then **Done**, or use **Auto ROI** near the target star.
+2. Choose **Edit ROI** to edit the full image, then **Done**, or use **Auto ROI** near the target star.
 3. Set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR.
 4. Adjust Stretch if the preview is too bright. Stop preview before changing exposure or ROI.
 
