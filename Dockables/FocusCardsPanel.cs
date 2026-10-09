@@ -3,7 +3,7 @@ using System.Windows.Controls;
 
 namespace Cwseo.NINA.LiveFocus.Dockables
 {
-    /// <summary>Place ROI/position setup beside the star picker when space permits.</summary>
+    /// <summary>Place display/position setup beside the target picker when space permits.</summary>
     public sealed class FocusCardsPanel : Grid
     {
         private bool? sideBySide;

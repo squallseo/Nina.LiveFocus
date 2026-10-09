@@ -6,7 +6,7 @@ A NINA plugin for moving the focuser while watching a live star image.
 
 ![Live Focus layout](docs/live-focus-ui.png)
 
-Compact controls rendered with synthetic test data. Live frames use NINA's main **Image** panel by default; there is no duplicate image workspace in Live Focus. Exposure, In / Out steps, position, local HFR and stretch stay visible. **Setup** starts folded and contains ROI, target movement, absolute position and Bahtinov overlay controls. Only its contents scroll, leaving live controls accessible on short docks.
+Compact controls rendered with synthetic test data. Live frames use NINA's main **Image** panel by default; there is no duplicate image workspace in Live Focus. Exposure, ROI selection/editing, In / Out steps, position, local HFR and stretch stay visible. ROI sits directly below Exposure. The wider start button uses NINA's blue Live View icon. **Setup** starts folded and contains target movement, absolute position and Bahtinov overlay controls. Only its contents scroll, leaving live controls accessible on short docks.
 
 Live HFR uses NINA's existing **HFR History** panel automatically during a live run. There is no separate HFR graph in Live Focus or below the Image panel. Open HFR History in NINA's Imaging workspace and dock it where you prefer. The trace is labeled **Live Focus HFR (ROI)**: it measures the selected star's central 256-pixel window, rather than the multi-star statistics of a normal captured image. Stopping live focus restores the original captured-image graph, axes and preferences. Native Clear clears only live samples during a run; normal captured-image CSV export is available again after stopping. Saved-image history and autofocus baselines are never populated with live frames. **Profile** is an optional star intensity plot available with the local preview when **Setup → Use NINA Image** is off.
 
@@ -14,7 +14,7 @@ HFR history shows a fixed **120 seconds**, with the latest frame at the right ed
 
 ROI editing uses the main Image panel when it is visible; **Retake / Done** remain in the compact Live Focus controls. A temporary local editor is available when the main viewer is closed or **Use NINA Image** is off. Finishing restores your local star-profile choice.
 
-[Small-screen controls (350 × 180)](docs/live-focus-compact.png)
+[Small-screen controls (350 × 220)](docs/live-focus-compact.png)
 
 ## Features
 
@@ -74,11 +74,11 @@ NINA supplies its own libraries; do not copy every dependency from the build dir
 ## Using it
 
 1. Connect the camera and focuser. Open **Setup → Go to target** to choose **Stars**, **Deep sky** or **Solar system**, filter or search and select a target, then use **Slew** or **Slew + Center**. For stars, the category row shows **Alt ≥** defaults to 45° and **Mag ≤** to 4.0. Smaller magnitude limits select brighter stars; larger limits include fainter stars. Search and filter edits update the list automatically; the refresh icon recalculates current visibility. A star must also clear the profile horizon by 5°. Remove a Bahtinov mask for plate solving. Moon/planets use **Slew**.
-2. Open NINA's **Image** panel. In Setup, choose **Edit ROI**, edit the yellow box directly in Image, then use **Done** in Live Focus. Zoom, scroll, rotation and flip keep the ROI in sensor coordinates. With Image closed, use the temporary local editor. **Auto ROI** is an alternative near the target star. Enable Bahtinov overlay here when using a mask.
+2. Open NINA's **Image** panel. Below Exposure, choose **Edit ROI**, edit the yellow box directly in Image, then use **Done** in Live Focus. Zoom, scroll, rotation and flip keep the ROI in sensor coordinates. With Image closed, use the temporary local editor. **Auto ROI** is an alternative near the target star. Enable Bahtinov overlay in Setup when using a mask.
 3. Fold Setup, open NINA's **Image** panel, set exposure and press the video icon to start. Use In / Out to adjust focus while viewing the star and local HFR. Open NINA's **HFR History** panel to see live ROI measurements automatically. Movement Stop and target-move cancellation remain available with Setup folded.
 4. Adjust Stretch if the preview is too bright. Stop preview before changing exposure or ROI.
 
-For full-sensor star-shape comparison, stop preview and choose **Setup → Star area → ROI list → Inspector 3×3**, then start again. The nine tiles are up to 512 × 512 pixels each, without resampling. Smaller sensors use smaller tiles. The camera acquires the full sensor, so download time remains the same as Full frame; only the nine tiles are copied and stretched for display. Focuser movement continues without restarting a native stream.
+For full-sensor star-shape comparison, stop preview and choose **ROI list below Exposure → Inspector 3×3**, then start again. The nine tiles are up to 512 × 512 pixels each, without resampling. Smaller sensors use smaller tiles. The camera acquires the full sensor, so download time remains the same as Full frame; only the nine tiles are copied and stretched for display. Focuser movement continues without restarting a native stream.
 
 Inspector HFR and the optional star profile measure only the sensor-center 256-pixel window. The native HFR History trace is labeled **Live Focus HFR (sensor center)**; it is not a nine-region average or tilt fit. Bahtinov overlay is unavailable in Inspector. Choose a pixel or percentage preset to return to normal ROI with the previous star anchor. **Edit ROI** switches back after a successful overview capture; **Auto ROI** switches back after a successful selection. Changing display stretch never changes the source pixels.
 

@@ -134,7 +134,7 @@
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
     <StackPanel>
-      <Border x:Name="EssentialControls" Style="{StaticResource FocusCard}" Padding="8" Margin="0,0,0,4">
+      <Border x:Name="EssentialControls" Style="{StaticResource FocusCard}" Padding="8,6" Margin="0,0,0,4">
         <StackPanel x:Name="SharedCaptureControls">
           <Grid Margin="0,0,0,4">
             <Grid.ColumnDefinitions>
@@ -144,7 +144,7 @@
               <ColumnDefinition Width="56" />
               <ColumnDefinition Width="22" />
             </Grid.ColumnDefinitions>
-            <Button x:Name="LiveVideoButton" Width="36" Height="32" Padding="5" Margin="0,0,10,0" ToolTipService.ShowOnDisabled="True">
+            <Button x:Name="LiveVideoButton" Width="44" Height="32" Padding="5" Margin="0,0,10,0" ToolTipService.ShowOnDisabled="True">
               <Button.Style>
                 <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
                   <Setter Property="Command" Value="{Binding StartFocusPreviewCommand}" />
@@ -164,17 +164,20 @@
                   </Style.Triggers>
                 </Style>
               </Button.Style>
-              <Viewbox Width="18" Height="18" Stretch="Uniform">
-                <Path Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}">
+              <Viewbox Width="22" Height="20" Stretch="Uniform">
+                <Path Stretch="Uniform">
                   <Path.Style>
                     <Style TargetType="Path">
-                      <Setter Property="Data" Value="M 1,2 L 13,2 Q 15,2 15,4 L 15,12 Q 15,14 13,14 L 1,14 Q 0,14 0,12 L 0,4 Q 0,2 1,2 Z M 16,5 L 22,2 L 22,14 L 16,11 Z" />
+                      <Setter Property="Data" Value="{StaticResource LiveViewSVG}" />
+                      <Setter Property="Fill" Value="#64B5F6" />
                       <Style.Triggers>
                         <DataTrigger Binding="{Binding IsFocusAssistRunning}" Value="True">
                           <Setter Property="Data" Value="{StaticResource CancelSVG}" />
+                          <Setter Property="Fill" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsStoppingFocusPreview}" Value="True">
                           <Setter Property="Data" Value="{StaticResource HourglassSVG}" />
+                          <Setter Property="Fill" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                         </DataTrigger>
                       </Style.Triggers>
                     </Style>
@@ -187,6 +190,36 @@
             <TextBox Grid.Column="3" Text="{Binding PreviewExposureMs, StringFormat=F0, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanConfigureLive}" AutomationProperties.Name="Exposure milliseconds" TextAlignment="Right" />
             <TextBlock Grid.Column="4" Text="ms" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
           </Grid>
+          <WrapPanel x:Name="RoiControls" Margin="0,0,0,6">
+            <Button x:Name="EditRoiButton" Margin="0,0,8,0">
+              <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
+                  <Setter Property="Content" Value="Edit ROI" />
+                  <Setter Property="Command" Value="{Binding SelectRoiCommand}" />
+                  <Setter Property="ToolTip" Value="Open the full image. Click a star, move the yellow box or drag its edges to resize." />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
+                      <Setter Property="Content" Value="Retake" />
+                      <Setter Property="Command" Value="{Binding RefreshRoiImageCommand}" />
+                      <Setter Property="ToolTip" Value="Replace the full image with a new exposure." />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Button.Style>
+            </Button>
+            <Button Content="Auto ROI" Command="{Binding AutoRoiCommand}" Style="{StaticResource FocusButton}" Margin="0,0,8,0" ToolTip="Find a star near the selected area and size its box. With Bahtinov overlay enabled, include the mask pattern. Stop preview before selecting." />
+            <ComboBox Width="120" SelectedValuePath="Tag" SelectedValue="{Binding PreviewRoiPreset, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" MinHeight="28" Margin="0,0,8,0" ToolTip="Choose a single ROI or Inspector 3×3 to compare the full sensor. Percentages scale both sensor dimensions: 50% uses 25% of the pixel area; 67% approximates a 1.5x crop. 100% uses the full sensor within camera alignment limits. For a custom size, drag the yellow box edges." AutomationProperties.Name="ROI size preset">
+              <ComboBoxItem Content="256 px" Tag="256" />
+              <ComboBoxItem Content="512 px" Tag="512" />
+              <ComboBoxItem Content="1024 px" Tag="1024" />
+              <ComboBoxItem Content="50%" Tag="50%" IsEnabled="{Binding HasRoiSensorDimensions}" />
+              <ComboBoxItem Content="67%" Tag="67%" IsEnabled="{Binding HasRoiSensorDimensions}" />
+              <ComboBoxItem Content="100% (Full)" Tag="100%" IsEnabled="{Binding HasRoiSensorDimensions}" />
+              <ComboBoxItem Content="Inspector 3×3" Tag="Inspector" IsEnabled="{Binding HasRoiSensorDimensions}" ToolTip="Aberration Inspector: compare nine 512-pixel tiles from the full sensor at the same scale and stretch. Full-frame camera download is required. HFR uses the sensor center." />
+              <ComboBoxItem Content="Custom" Tag="Custom" />
+            </ComboBox>
+
+          </WrapPanel>
           <WrapPanel>
             <TextBlock Text="Step" Width="30" VerticalAlignment="Center" Foreground="{StaticResource SecondaryBrush}" />
             <TextBox Text="{Binding UserStep, UpdateSourceTrigger=LostFocus}" Width="60" Margin="0,0,8,0" AutomationProperties.Name="Focuser step size" />
@@ -262,48 +295,18 @@
           </Grid>
         </StackPanel>
       </Border>
-      <Expander x:Name="SetupExpander" IsExpanded="False" Margin="2,0,2,4" ToolTip="Choose the star area, slew to a star, deep-sky object, Moon or planet, or set an absolute focuser position. Fold this after setup to enlarge the image.">
+      <Expander x:Name="SetupExpander" IsExpanded="False" Margin="2,0,2,4" ToolTip="Slew to a star, deep-sky object, Moon or planet, set an absolute focuser position, or adjust display options. Fold this after setup to enlarge the image.">
         <Expander.Header>
           <StackPanel Orientation="Horizontal">
             <TextBlock Text="Setup" FontWeight="SemiBold" />
-            <TextBlock Text="ROI · GOTO · Position" FontSize="11" Foreground="{StaticResource SecondaryBrush}" Margin="10,0,0,0" VerticalAlignment="Center" />
+            <TextBlock Text="GOTO · Position · Display" FontSize="11" Foreground="{StaticResource SecondaryBrush}" Margin="10,0,0,0" VerticalAlignment="Center" />
           </StackPanel>
         </Expander.Header>
         <ScrollViewer x:Name="ControlsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <local:FocusCardsPanel Margin="0,6,0,0">
             <Border x:Name="RoiSetupCard" Style="{StaticResource FocusCard}">
               <StackPanel>
-                <TextBlock Text="Star area" FontWeight="SemiBold" Margin="0,0,0,6" />
-                <WrapPanel>
-                  <Button x:Name="EditRoiButton" Margin="0,0,8,0">
-                    <Button.Style>
-                      <Style TargetType="Button" BasedOn="{StaticResource FocusButton}">
-                        <Setter Property="Content" Value="Edit ROI" />
-                        <Setter Property="Command" Value="{Binding SelectRoiCommand}" />
-                        <Setter Property="ToolTip" Value="Open the full image. Click a star, move the yellow box or drag its edges to resize." />
-                        <Style.Triggers>
-                          <DataTrigger Binding="{Binding IsSelectingRoi}" Value="True">
-                            <Setter Property="Content" Value="Retake" />
-                            <Setter Property="Command" Value="{Binding RefreshRoiImageCommand}" />
-                            <Setter Property="ToolTip" Value="Replace the full image with a new exposure." />
-                          </DataTrigger>
-                        </Style.Triggers>
-                      </Style>
-                    </Button.Style>
-                  </Button>
-                  <Button Content="Auto ROI" Command="{Binding AutoRoiCommand}" Style="{StaticResource FocusButton}" Margin="0,0,8,0" ToolTip="Find a star near the selected area and size its box. With Bahtinov overlay enabled, include the mask pattern. Stop preview before selecting." />
-                  <ComboBox Width="120" SelectedValuePath="Tag" SelectedValue="{Binding PreviewRoiPreset, Mode=TwoWay}" IsEnabled="{Binding CanConfigureLive}" MinHeight="28" Margin="0,0,8,0" ToolTip="Choose a single ROI or Inspector 3×3 to compare the full sensor. Percentages scale both sensor dimensions: 50% uses 25% of the pixel area; 67% approximates a 1.5x crop. 100% uses the full sensor within camera alignment limits. For a custom size, drag the yellow box edges." AutomationProperties.Name="ROI size preset">
-                    <ComboBoxItem Content="256 px" Tag="256" />
-                    <ComboBoxItem Content="512 px" Tag="512" />
-                    <ComboBoxItem Content="1024 px" Tag="1024" />
-                    <ComboBoxItem Content="50%" Tag="50%" IsEnabled="{Binding HasRoiSensorDimensions}" />
-                    <ComboBoxItem Content="67%" Tag="67%" IsEnabled="{Binding HasRoiSensorDimensions}" />
-                    <ComboBoxItem Content="100% (Full)" Tag="100%" IsEnabled="{Binding HasRoiSensorDimensions}" />
-                    <ComboBoxItem Content="Inspector 3×3" Tag="Inspector" IsEnabled="{Binding HasRoiSensorDimensions}" ToolTip="Aberration Inspector: compare nine 512-pixel tiles from the full sensor at the same scale and stretch. Full-frame camera download is required. HFR uses the sensor center." />
-                    <ComboBoxItem Content="Custom" Tag="Custom" />
-                  </ComboBox>
 
-                </WrapPanel>
                 <ToggleButton Content="Bahtinov overlay" IsChecked="{Binding AnalyzeBahtinov, Mode=TwoWay}" IsEnabled="{Binding CanUseBahtinovOverlay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip="Draw diffraction lines in single-ROI view (unavailable in Inspector 3×3). Remove the mask before plate solving." />
                 <ToggleButton x:Name="MainImageOutputToggle" Content="Use NINA Image" IsChecked="{Binding ShowInNinaImage, Mode=TwoWay}" Style="{StaticResource FocusSwitch}" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip="Display the live ROI, stretch and overlay in NINA's Image panel (up to 10 updates/sec). Display only: NINA's raw-image statistics and save tools still refer to normal captures. The local preview is hidden except while editing ROI." />
                 <TextBlock Text="Absolute position" FontWeight="SemiBold" Margin="0,10,0,6" />

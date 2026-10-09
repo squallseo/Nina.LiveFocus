@@ -74,10 +74,10 @@ internal static partial class PreviewDisplayChecks {
             "Camera reconnection restores the connected check indicator");
         check(vm.ShowInNinaImage && workspace.Visibility==Visibility.Collapsed && ((FrameworkElement)view.FindName("PreviewCard")).Visibility==Visibility.Collapsed,
             "NINA Image is the default output and the duplicate local view uses no workspace");
-        check(((FrameworkElement)view.FindName("EssentialControls")).ActualHeight<170 && metric.Visibility==Visibility.Visible,
-            "Image-only mode retains compact HFR, stretch and motor controls");
-        var compactShot=new RenderTargetBitmap(350,180,96,96,PixelFormats.Pbgra32);compactShot.Render(view);
-        compactShot.CopyPixels(new byte[350*180*4],350*4,0);
+        check(((FrameworkElement)view.FindName("EssentialControls")).ActualHeight<202 && metric.Visibility==Visibility.Visible,
+            "Image-only mode retains compact ROI, HFR, stretch and motor controls");
+        var compactShot=new RenderTargetBitmap(350,220,96,96,PixelFormats.Pbgra32);compactShot.Render(view);
+        compactShot.CopyPixels(new byte[350*220*4],350*4,0);
         var compactEncoder=new PngBitmapEncoder();compactEncoder.Frames.Add(BitmapFrame.Create(compactShot));
         using(var file=File.Create("bin/live-focus-image-controls.png"))compactEncoder.Save(file);
         toggle.IsChecked=true;view.UpdateLayout();
@@ -91,7 +91,7 @@ internal static partial class PreviewDisplayChecks {
             view.Measure(new Size(width,height));view.Arrange(new Rect(0,0,width,height));view.UpdateLayout();
             view.Dispatcher.Invoke(()=>{},DispatcherPriority.DataBind);view.UpdateLayout();
             var video=Children(view).OfType<Button>().Single(b=>AutomationProperties.GetName(b)=="Start live focus");
-            check(video.Visibility==Visibility.Visible && video.ActualWidth==36,"Start video button stays visible while idle at "+label);
+            check(video.Visibility==Visibility.Visible && video.ActualWidth==44,"Start video button stays visible while idle at "+label);
             var step=Children(view).OfType<Button>().Single(b=>Equals(b.Content,"In \u2212"));
             check(step.Visibility==Visibility.Visible && step.ActualWidth>35,"Focuser direction button is readable at "+label);
             check(((SolidColorBrush)step.Foreground).Color.A==255,"Focuser button text uses the visible host theme at "+label);
@@ -99,7 +99,7 @@ internal static partial class PreviewDisplayChecks {
             check(exposure.ActualWidth>=30 && exposure.SmallChange==50,"Exposure slider fits with 50ms increments at "+label);
             var stretch=Children(view).OfType<Slider>().Single(s=>s.Maximum==2.5);
             check(stretch.ActualWidth>20 && stretch.Value==vm.PreviewStretchStrength,"Image stretch remains accessible at "+label);
-            check(preview.ActualHeight>=height-240 && preview.ActualWidth>workspace.ActualWidth*.9 && graphs.Visibility==Visibility.Collapsed && metric.Visibility==Visibility.Visible,
+            check(preview.ActualHeight>=height-272 && preview.ActualWidth>workspace.ActualWidth*.9 && graphs.Visibility==Visibility.Collapsed && metric.Visibility==Visibility.Visible,
                 "Folded layout maximizes the star image and retains HFR at "+label+$" (image {preview.ActualWidth:F0}x{preview.ActualHeight:F0}, workspace {workspace.ActualWidth:F0}, graphs {graphs.Visibility}, metric {metric.Visibility})");
             double fullHeight=preview.ActualHeight,fullWidth=preview.ActualWidth;
             var roi=vm.PreviewRoiRectangle;var selectedStar=vm.SelectedFocusTarget;
@@ -131,7 +131,7 @@ internal static partial class PreviewDisplayChecks {
                 view.UpdateLayout();
             }
             check(preview.ActualHeight<fullHeight && preview.ActualHeight>=180 && ((Button)view.FindName("EditRoiButton")).ActualHeight>=28,
-                "Expanded setup leaves a usable image and exposes ROI controls at "+label);
+                "Expanded setup leaves a usable image and exposes ROI controls at "+label+$" (image {preview.ActualHeight}, full {fullHeight}, ROI {((Button)view.FindName("EditRoiButton")).ActualHeight})");
             var roiCard=(FrameworkElement)view.FindName("RoiSetupCard");
             var starCard=(FrameworkElement)view.FindName("StarSetupCard");
             var altitudeInput=(TextBox)view.FindName("MinimumAltitudeInput");
@@ -151,7 +151,7 @@ internal static partial class PreviewDisplayChecks {
             var controlsScroll=(ScrollViewer)view.FindName("ControlsScrollViewer");
             var videoY=video.TranslatePoint(new Point(),view).Y;
             controlsScroll.ScrollToEnd();view.UpdateLayout();
-            check(video.TranslatePoint(new Point(),view).Y==videoY && videoY<30 && setup.TranslatePoint(new Point(),view).Y<180,
+            check(video.TranslatePoint(new Point(),view).Y==videoY && videoY<30 && setup.TranslatePoint(new Point(),view).Y<212,
                 "Only setup scrolls; live controls and fold header remain visible at "+label);
             controlsScroll.ScrollToTop();view.UpdateLayout();
             if(width==650 && height==700) {
